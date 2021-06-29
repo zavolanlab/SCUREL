@@ -1,0 +1,318 @@
+##############################################################################
+#
+#   Snakemake pipeline:
+#   Compute average 3'UTR length per cell & analyse cell type specific usage
+#
+#   AUTHOR: Dominik Burri
+#   AFFILIATION: Biozentrum_University_of_Basel
+#   CONTACT: dominik.burri@unibas.ch
+#   CREATED: 2019-11-07
+#   LICENSE: GPL v3.0
+#
+##############################################################################
+
+import pandas as pd
+import os
+
+# TODO: move rule specification to respective Snakefiles
+localrules: finish, plot_read_counts, auc_analysis, copy_coverage_3p_end, copy_coverage_3p_end_ct, pas_clusters_bed
+
+samples = pd.read_table(config["defsamples"], sep="\t").set_index("sample", drop=False)
+
+
+CELL_TYPES = config['cell_types']
+SAMPLE_ORIGIN = config['sample_origin']
+
+wildcard_constraints:
+    cell_type = "(" + "|".join(CELL_TYPES) + "|merged" + ")",
+    strand = "(plus|minus)",
+    origin = "(" + "|".join(config['sample_origin']) + ")"
+
+# Select snakefiles based on execution mode
+if config['mode'] == 'cell_state_comparison':
+    include: os.path.join('workflow', 'cell_state_comparison.smk')
+    final_files = [os.path.join(config['out_dir'], 
+        "auc", "analysis_out", 
+        config['analysis_prefix'] + "_TEs_shorter_" + x + ".tsv") 
+        for x in ['merged'] + CELL_TYPES]
+elif config['mode'] == 'cell_type_comparison':
+    cmprs = pd.read_table(config["comparisons"], sep="\t", header = None, names = ['comparison', 'ct1', 'ct2']).set_index("comparison", drop = False)
+    include: os.path.join('workflow', 'cell_type_comparison.smk')
+    final_files = [os.path.join(config['out_dir'], 
+        "auc_comparisons", "analysis_out", 
+        config['analysis_prefix'] + "_TEs_shorter_" + x + ".tsv") 
+        for x in cmprs.index.values]
+else:
+    # if no proper mode set, do not perform anything
+    final_files = []
+
+onstart:
+    print("Initialise cluster log usage")
+    if not os.path.exists(os.path.dirname(config["cluster_log"])):
+        os.mkdir(os.path.dirname(config["cluster_log"]))
+    if not os.path.exists(config["cluster_log"]):
+        os.mkdir(config["cluster_log"])
+    if not os.path.exists('cellranger_count'):
+        os.mkdir('cellranger_count')
+
+onsuccess:
+    print("Workflow finished, no error.")
+
+#######
+# Define finish rule
+rule finish:
+    input: 
+        final_files
+
+
+# include workflow parts
+include: os.path.join('workflow', 'mapping.smk')
+
+
+rule TE_bed:
+    '''
+    Extract terminal exons from genome annotation
+    '''
+    input:
+        gff=config['genome_annotation']
+    output:
+        bed=os.path.join(config['mapping_dir'], "terminal_exons.bed")
+    params:
+        type_id=config['TE_bed']['type_id'],
+        gene_type=config['TE_bed']['gene_type'],
+        source=config['TE_bed']['source'],
+        script = os.path.join(config['script_dir'], "construct_terminal_exons.py")
+    resources:
+        mem_mb = 4096
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "intervaltree.yaml")
+    log: os.path.join(config['local_log'], "TE_bed.log")
+    shell:
+        """
+        python {params.script} --type-id {params.type_id} \
+            --gene-type {params.gene_type} \
+            --source {params.source} \
+            --log-file {log} \
+            {input.gff} {output.bed}
+        """
+
+# Rules for separating and sorting reads within a sample by provided cell type annotation
+# Independent of mode execution
+rule separate_reads:
+    '''
+    separate reads from each sample into cell types annotated in annots 
+    '''
+    input:
+        annots = os.path.join(config['cell_type_annotation']),
+        sample = os.path.join(config['mapping_dir'], "{sample}", "filtered", "cbtags.bam"),
+    output:
+        expand(os.path.join(config['out_dir'], "samples", "{{sample}}", "cell_types", "{cell_type}.bam"), 
+            cell_type=CELL_TYPES)
+    params:
+        sample_name = lambda wildcards: wildcards.sample.replace('_', '')
+    resources:
+        mem_mb = 2048
+    log: os.path.join(config['local_log'], "separate_reads", "{sample}.log")
+    conda: os.path.join(config['envs_dir'], "pysam.yaml")
+    script: os.path.join(config['script_dir'], "separate_reads.py")
+
+
+rule sort_separated_reads:
+    '''
+    sort BAM
+    '''
+    input:
+        os.path.join(config['out_dir'], 
+            "samples", "{sample}", "cell_types", "{cell_type}.bam")
+    output:
+        os.path.join(config['out_dir'], 
+            "samples", "{sample}", "cell_types", "{cell_type}.sorted.bam")
+    resources:
+        mem_mb = 1024
+    conda: os.path.join(config['envs_dir'], "samtools.yaml")
+    shell: "samtools sort -o {output} {input}"
+
+
+rule merge_reads:
+    ''' 
+    merge cells from same cell type and sample origin 
+    '''
+    input: 
+        lambda wildcards: expand(os.path.join(config['out_dir'], "samples", "{sample}", 
+            "cell_types", "{{cell_type}}.sorted.bam"), 
+            sample=samples.loc[(samples['origin'] == wildcards.origin), 'sample'].tolist())
+    output:
+        temp(os.path.join(config['out_dir'], "cell_types", 
+            "{cell_type}_" + "{origin}" + ".bam"))
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "samtools.yaml")
+    threads: 
+        lambda wildcards, input: 1 if len(input) == 1 else 2
+    resources:
+        mem_mb=2048
+    log: os.path.join(config['local_log'], "merge_bams", "merge_{cell_type}_{origin}.log")
+    shell:
+        """
+        (samtools merge --threads {threads} {output} {input}) &> {log}
+        """
+
+rule merge_reads_ct:
+    ''' 
+    merge cells from same cell type and sample origin 
+    '''
+    input: 
+        expand(os.path.join(config['out_dir'], "samples", "{sample}", 
+            "cell_types", "{{cell_type}}.sorted.bam"),
+            sample = samples.index)
+    output:
+        temp(os.path.join(config['out_dir'], "cell_types", 
+            "{cell_type}.bam"))
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "samtools.yaml")
+    threads: 
+        lambda wildcards, input: 1 if len(input) == 1 else 2
+    resources:
+        mem_mb=2048
+    log: os.path.join(config['local_log'], "merge_bams", "merge_{cell_type}.log")
+    shell:
+        """
+        (samtools merge --threads {threads} {output} {input}) &> {log}
+        """
+
+rule merge_all_reads:
+    ''' 
+    merge reads from all cell types and sample origins 
+    '''
+    input: 
+        lambda wildcards: expand(os.path.join(config['mapping_dir'], 
+            "{sample}", "filtered", "cbtags.bam"),
+            sample = samples.loc[(samples['origin'] == wildcards.origin), 'sample'].tolist())
+    output:
+        temp(os.path.join(config['out_dir'], "cell_types", 
+            "merged_" + "{origin}" + ".bam"))
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "samtools.yaml")
+    threads: 
+        lambda wildcards, input: 1 if len(input) == 1 else 2
+    resources:
+        mem_mb=1536
+    log: os.path.join(config['local_log'], "cell_types", "merged_{origin}_bams.log")
+    shell:
+        """
+        (samtools merge --threads {threads} {output} {input}) &> {log}
+        """
+
+
+rule sort_merged_reads:
+    ''' 
+    sort BAM
+    '''
+    input:
+        os.path.join(config['out_dir'], "cell_types", "{cell_type}_{origin}.bam")
+    output:
+        os.path.join(config['out_dir'], "cell_types", "{cell_type}_{origin}.sorted.bam")
+    threads: 1
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "samtools.yaml")
+    shell: "samtools sort -@ {threads} -o {output} {input}"
+
+rule sort_merged_reads_ct:
+    ''' 
+    sort BAM
+    '''
+    input:
+        os.path.join(config['out_dir'], "cell_types", "{cell_type}.bam")
+    output:
+        os.path.join(config['out_dir'], "cell_types", "{cell_type}.sorted.bam")
+    threads: 1
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "samtools.yaml")
+    shell: "samtools sort -@ {threads} -o {output} {input}"
+
+rule coverage_3p_end:
+    '''
+    compute 3' position coverage
+    '''
+    input:
+        os.path.join(config['out_dir'], "cell_types", 
+            "{cell_type}_{origin}.sorted.bam")
+    output:
+        plus = temp(os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_{origin}_plus.bedgraph")),
+        minus = temp(os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_{origin}_minus.bedgraph"))
+    resources:
+        mem_mb = 3072
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "bedtools.yaml")
+    log: os.path.join(config['local_log'], "coverage_3p_end", "{cell_type}_{origin}.log")
+    shell:
+        """
+        (bedtools genomecov -bga -3 -strand + -ibam {input} > {output.plus}; \
+        bedtools genomecov -bga -3 -strand - -ibam {input} > {output.minus}) &> {log}
+        """
+
+rule coverage_3p_end_ct:
+    '''
+    compute 3' position coverage
+    '''
+    input:
+        os.path.join(config['out_dir'], "cell_types", 
+            "{cell_type}.sorted.bam")
+    output:
+        plus = temp(os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_plus.bedgraph")),
+        minus = temp(os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_minus.bedgraph"))
+    resources:
+        mem_mb = 3072
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "bedtools.yaml")
+    log: os.path.join(config['local_log'], "coverage_3p_end", "{cell_type}.log")
+    shell:
+        """
+        (bedtools genomecov -bga -3 -strand + -ibam {input} > {output.plus}; \
+        bedtools genomecov -bga -3 -strand - -ibam {input} > {output.minus}) &> {log}
+        """
+
+rule correct_coverage_3p_end:
+    '''
+    Adjust the bedgraph format to split regions with same coverage into separate entries 
+    for correct cumulative distribution calculation
+    Threads and memory usage are based on file size.
+    '''
+    input:
+        os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_{origin}_{strand}.bedgraph")
+    output:
+        os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_{origin}_{strand}.corr.bedgraph")
+    params:
+        script = os.path.join(config['script_dir'], "correct_coverage_3p_end.py")
+    threads: 
+        lambda wildcards, input: 1 if (os.path.getsize(input[0]) / pow(1024,2)) < 100 else 3
+    resources:
+        mem_mb = lambda wildcards, input: 2048 if (os.path.getsize(input[0]) / pow(1024,2)) < 100 else 16384
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
+    log: os.path.join(config['local_log'], "coverage_3p_end", "{cell_type}_{origin}_{strand}.corr.log")
+    shell:
+        """
+        python {params.script} -i {input} -o {output} -c {threads} -log {log}
+        """
+
+rule correct_coverage_3p_end_ct:
+    '''
+    Adjust the bedgraph format to split regions with same coverage into separate entries 
+    for correct cumulative distribution calculation
+    Threads and memory usage are based on file size.
+    '''
+    input:
+        os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_{strand}.bedgraph")
+    output:
+        os.path.join(config['out_dir'], "coverage_3p", 
+            "{cell_type}_{strand}.corr.bedgraph")
+    params:
+        script = os.path.join(config['script_dir'], "correct_coverage_3p_end.py")
+    threads: 
+        lambda wildcards, input: 1 if (os.path.getsize(input[0]) / pow(1024,2)) < 100 else 3
+    resources:
+        mem_mb = lambda wildcards, input: 2048 if (os.path.getsize(input[0]) / pow(1024,2)) < 100 else 16384
+    conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
+    log: os.path.join(config['local_log'], "coverage_3p_end", "{cell_type}_{strand}.corr.log")
+    shell:
+        """
+        python {params.script} -i {input} -o {output} -c {threads} -log {log}
+        """

@@ -1,0 +1,12 @@
+name: sc-polyasite
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - numpy=1.17.2
+  - pandas=0.25.2
+  - pip=19.3.1
+  - python=3.6.7
+  - snakemake=5.7.1
+  - matplotlib=3.2.2

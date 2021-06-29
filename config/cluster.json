@@ -1,0 +1,97 @@
+{
+    "__default__":
+    {
+    "queue":"6hours",
+    "time":"02:00:00",
+    "threads":"1",
+    "mem":"4G",
+    "name": "{rule}.{wildcards}",
+    "out": "$PWD/logs/cluster_log/{rule}.{wildcards}-%j-%N.out"
+    },
+    "cellranger_count":
+    {
+    "queue":"1day",
+    "time":"12:00:00",
+    "threads":"8",
+    "mem":"64G"
+    },
+    "filter_high_quality":
+    {
+        "time": "03:00:00",
+        "threads": "2",
+        "mem": "2G"
+    },
+    "de_duplicate":
+    {
+        "time": "03:00:00",
+        "threads": "2",
+        "mem": "2G"
+    },
+    "filter_non_CB_tags":
+    {
+        "time": "06:00:00",
+        "mem": "4G"
+    },
+    "TE_bed":
+    {
+        "queue": "30min",
+        "time": "00:30:00",
+        "mem": "2G"
+    },
+    "cumulative_coverage_3p_end":
+    {
+        "time": "04:00:00"
+    },
+    "cumulative_coverage_3p_end_ct":
+    {
+        "time": "04:00:00"
+    },
+    "correct_coverage_3p_end":
+    {
+        "time": "03:00:00"
+    },
+    "correct_coverage_3p_end_ct":
+    {
+        "time": "03:00:00"
+    },
+    "label_randomisation":
+    {
+        "time": "04:00:00"
+    },
+    "label_randomisation_ct":
+    {
+        "time": "04:00:00"
+    },
+    "calculation_auc":
+    {
+        "time": "04:00:00"
+    },
+    "auc_analysis":
+    {
+        "time": "00:05:00",
+        "queue": "30min"
+    },
+    "sort_separated_reads":
+    {
+        "queue": "30min",
+        "time": "0:30:00"
+    },
+    "merge_all_reads":
+    {
+        "time": "04:00:00"
+    },
+    "sort_merged_reads":
+    {
+        "time": "03:00:00"
+    },
+    "sort_merged_reads_ct":
+    {
+        "time": "03:00:00"
+    },
+    "index_reads":
+    {
+        "queue": "30min",
+        "time": "0:20:00",
+        "mem":"2G"
+    }
+}

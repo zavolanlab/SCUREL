@@ -1,0 +1,348 @@
+---
+title: "Dataset and patient comparison"
+output: html_notebook
+---
+
+For each dataset, resp. patient, and cell type, we have genes that show 3'UTR shortening or lengthening. 
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+## setting working directory
+opts_knit$set(root.dir = "~/Documents/gitlab/sc-polyasite")
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(UpSetR)
+library(svglite)
+library(biomaRt)
+library(ggvenn)
+```
+
+Input arguments. Decide on one of three options.
+```{r}
+# Figure 4: cancer analysis
+cell_types <- c('cancer_vs_alveolar_normal')
+patients <- data.frame(patient = c('lambrechts', 'laughney'),
+                       dataset = c('lambrechts','laughney'))
+out_dir <- 'results/luad_matched/comparison/dataset_cancer'
+idir <- 'auc_comparisons'
+```
+
+```{r}
+# Figure 5: dataset analysis
+cell_types <- c('alveolar', 'B_cell', 'endothelial', 'fibroblast', 'mast_cell', 'merged', 'myeloid', 'T_cell')
+patients <- data.frame(patient = c('lambrechts', 'laughney'),
+                       dataset = c('lambrechts','laughney'))
+out_dir <- 'results/luad_matched/comparison/dataset_celltypes'
+idir <- 'auc'
+```
+
+```{r}
+# Figure 6: patient analysis
+cell_types <- c('endothelial', 'fibroblast', 'merged', 'myeloid', 'T_cell')
+patients <- data.frame(patient = c('patient3', 'patient4', 'patient6'),
+                       dataset = c('lambrechts','lambrechts','lambrechts'))
+out_dir <- 'results/luad_matched/comparison/dataset_patients'
+idir <- 'auc'
+```
+
+General settings
+```{r}
+prefix <- 'cpm2'
+```
+
+# Load all TE ids  
+```{r}
+tes.shorter <- list()
+tes.longer <- list()
+for(i in 1:nrow(patients)){
+  for(ct in cell_types){
+    file <- file.path('results', 'luad_matched', patients[i, 'patient'], 
+                      idir, 'analysis_out', paste0(prefix, '_TEs_shorter_IQR_', ct, '.tsv'))
+    if(file.exists(file)){
+      name <- paste(patients[i, 'patient'], ct, sep = ":")
+      tes.shorter[[name]] <- read.table(file, sep = "\t", header = FALSE, stringsAsFactors = FALSE)[,1]
+    }
+    
+    file <- file.path('results', 'luad_matched', patients[i, 'patient'], 
+                      idir, 'analysis_out', paste0(prefix, '_TEs_longer_IQR_', ct, '.tsv'))
+    if(file.exists(file)){
+      name <- paste(patients[i, 'patient'], ct, sep = ":")
+      tes.longer[[name]] <- read.table(file, sep = "\t", header = FALSE, stringsAsFactors = FALSE)[,1]
+    }
+  }
+}
+```
+
+Obtain total number of genes.
+Load set of TEs with sufficient expression.
+```{r}
+tes.filtered <- list()
+
+for(i in 1:nrow(patients)){
+  for(ct in cell_types){
+    file <- file.path('results', 'luad_matched', patients[i, 'patient'], 
+                      idir, 'analysis_out', paste0(prefix, '_TEs_filtered_', ct, '.tsv'))
+    if(file.exists(file)){
+      name <- paste(patients[i, 'patient'], ct, sep = ":")
+      tes.filtered[[name]] <- read.table(file, sep = "\t", header = FALSE, stringsAsFactors = FALSE)[,1]
+    }
+  }
+}
+```
+
+## Convert TE ids to gene ids
+```{r}
+new_config <- httr::config(ssl_verifypeer = FALSE)
+httr::set_config(new_config, override = FALSE)
+
+conv_ttog <- function(myvector, mytable){
+  res <- sapply(myvector, function(x) mytable[mytable[,1] == x, 2][1])
+  return(unname(res))
+}
+
+# select proper organism!
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+transcripts <- unique(unlist(c(lapply(tes.longer, sample), lapply(tes.shorter, sample))))
+mouse_transcripts <- getBM(filters= "refseq_mrna", attributes= c("refseq_mrna","external_gene_name"),
+               values = transcripts, mart= mart)
+
+genes.shorter <- lapply(tes.shorter, function(x) conv_ttog(x, mouse_transcripts))
+genes.longer <- lapply(tes.longer, function(x) conv_ttog(x, mouse_transcripts))
+
+# omit NA and only unique genes
+genes.shorter <- lapply(genes.shorter, function(x) unique(na.omit(x)))
+genes.longer <- lapply(genes.longer, function(x) unique(na.omit(x)))
+```
+
+Replace TE ids by gene names in further analysis
+```{r}
+tes.shorter <- genes.shorter
+tes.longer <- genes.longer
+```
+
+# Methods
+```{r}
+get_background <- function(ct, tes_list){
+  tes.ct.background <- tes_list[grep(ct, names(tes_list))]
+  tes.union <- Reduce(union, tes.ct.background)
+  
+  # convert to gene names
+  transcripts <- getBM(filters= "refseq_mrna", attributes= c("refseq_mrna","external_gene_name"),
+                 values = tes.union, mart= mart)
+  genes.union <- unique(transcripts$external_gene_name)
+  return(genes.union)
+}
+
+prob_overlap <- function(list1, list2, background){
+  intersection <- intersect(list1, list2)
+  x <- length(intersection)
+  n <- length(unique(list1))
+  K <- length(unique(list2))
+  N <- length(background)
+  odds_ratio <- x / ((n*K) / N)
+  if(x < (n*K) / N){
+    pval <- sum(dhyper(x = 0:x, m = K, n = N - K, k = n))
+  } else {
+    pval <- 1 - sum(dhyper(x = 0:(x-1), m = K, n = N - K, k = n))
+  }
+  if(pval < .Machine$double.eps){
+    pval <- .Machine$double.eps
+  }
+  return(list(genes_intersection = intersection, odds_ratio = odds_ratio, pvalue = pval))
+}
+```
+
+# General statistics
+
+## Number of genes with 3'UTR shortening and lengthening per patient and cell type
+```{r}
+nr_tes_shorter <- sapply(tes.shorter, length)
+nr_tes_longer <- sapply(tes.longer, length)
+df <- data.frame(nr_tes_shorter, nr_tes_longer)
+df$Patient <- sapply(rownames(df), function(x) strsplit(x, ":")[[1]][1])
+df$cell_type <- sapply(rownames(df), function(x) strsplit(x, ":")[[1]][2])
+# rename cell types
+df$cell_type <- as.factor(df$cell_type)
+levels(df$cell_type) <- sapply(levels(df$cell_type), function(x) gsub("_", " ", x))
+# rename patient
+df$Patient <- as.factor(df$Patient)
+
+df.womerged <- filter(df, cell_type != 'merged')
+```
+
+Rename labels
+```{r}
+label_names <- c('shortening', 'lenthening')
+names(label_names) <- colnames(df)[1:2]
+
+label_names_dataset <- c('Lambrechts', 'Laughney')
+names(label_names_dataset) <- levels(df$Patient)
+```
+
+Plot only merged.
+Note: not applicable for cell_state_comparison!
+```{r}
+df.merged <- filter(df, cell_type == 'merged')
+df.m.melt <- melt(df.merged, id.vars = c('Patient'), 
+                  measure.vars = c('nr_tes_shorter', 'nr_tes_longer'))
+# rename labels
+levels(df.m.melt$variable) <- label_names
+# NOTE: this only for dataset analysis!
+levels(df.m.melt$Patient) <- label_names_dataset
+
+# NOTE: change labs fill appropriately!
+ggplot(df.m.melt, aes(x=variable, y=value, fill=Patient)) +
+  geom_col(position = 'dodge') +
+  theme_bw() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(y = '# genes', fill = "Dataset") +
+  theme(axis.text.y = element_text(size=8),
+        axis.text.x = element_text(size = 8, angle = 0, hjust = 0.5),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=10))
+ggsave(file.path(out_dir, 'bargraph_bulk_like_dodge.png'),
+       device = "png", width = 8, height = 3.5, units = "cm")
+```
+
+Plot as bargraphs
+```{r}
+ggplot(df.womerged, aes(x=cell_type, y=nr_tes_shorter, fill=Patient)) + 
+  geom_col(position = "dodge")  + 
+  theme_bw() +
+  labs(y = '# genes') + 
+  scale_fill_brewer(palette = "Dark2") + 
+  theme(axis.text = element_text(size=8),
+        axis.text.x = element_text(angle = 30, hjust = 1),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=10),
+        legend.position = "none")
+ggsave(file.path(out_dir, 'bargraph_genes_shorter.png'),
+       device = "png", width = 7, height = 3.5, units = "cm")
+
+ggplot(df.womerged, aes(x=cell_type, y=nr_tes_longer, fill=Patient)) + 
+  geom_col(position = "dodge") +
+  theme_bw() +
+  labs(y = '# genes') + 
+  scale_fill_brewer(palette = "Dark2") + 
+  theme(axis.text = element_text(size=8),
+        axis.text.x = element_text(angle = 30, hjust = 1),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=10),
+        legend.position = "none")
+ggsave(file.path(out_dir, 'bargraph_genes_longer.png'),
+       device = "png", width = 7, height = 3.5, units = "cm")
+```
+
+Plot fraction of TEs shorter
+```{r}
+df.womerged <- mutate(df.womerged, fraction_shorter = nr_tes_shorter / (nr_tes_shorter + nr_tes_longer))
+
+ggplot(df.womerged, aes(x=cell_type, y=fraction_shorter, color=Patient, group=Patient)) + 
+  geom_line()  + 
+  geom_point() +
+  scale_color_brewer(palette = "Dark2") +
+  theme_bw() +
+  geom_hline(yintercept = 0.5, color = "black") +
+  lims(y=c(0,1)) +
+  labs(y = 'fraction shortening') +
+  theme(axis.text = element_text(size=8),
+        axis.text.x = element_text(angle = 30, hjust = 1),
+        axis.title = element_blank(),
+        legend.position = "none")
+  
+ggsave(file.path(out_dir, 'lineplot_fraction_genes_shorter.png'),
+       device = "png", width = 7, height = 3.5, units = "cm")
+```
+
+## Overlaps
+
+### Significance analysis
+
+```{r}
+ct <- cell_types[8]
+```
+
+Calculate significance
+> for paired data only!
+
+```{r}
+# get cell type-specific background
+genes.bg.ct <- get_background(ct, tes.filtered)
+# Write statistical background out
+write.table(genes.bg.ct,
+              file = file.path(out_dir, paste0("bg_genes_", ct, ".tsv")), 
+              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+# For shortening events
+tes.shorter.ct <- tes.shorter[grep(ct, names(tes.shorter))]
+names(tes.shorter.ct) <- c('Lambrechts', 'Laughney')
+# patient 3 and 6 only
+# names(tes.shorter.ct) <- c('patient3', 'patient4', 'patient6')
+# tes.shorter.ct[[2]] <- NULL
+
+res.shorter.ct <- prob_overlap(tes.shorter.ct[[1]], tes.shorter.ct[[2]], genes.bg.ct)
+# Write intersection genes out
+write.table(res.shorter.ct$genes_intersection,
+              file = file.path(out_dir, paste0("intersection_genes_shortening_", ct, ".tsv")), 
+              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+# For lengthening events
+tes.longer.ct <- tes.longer[grep(ct, names(tes.longer))]
+names(tes.longer.ct) <- c('Lambrechts', 'Laughney')
+# patient 3 and 6 only
+# names(tes.longer.ct) <- c('patient3', 'patient4', 'patient6')
+# tes.longer.ct[[2]] <- NULL
+res.longer.ct <- prob_overlap(tes.longer.ct[[1]], tes.longer.ct[[2]], genes.bg.ct)
+# Write intersection genes out
+write.table(res.longer.ct$genes_intersection,
+              file = file.path(out_dir, paste0("intersection_genes_lengthening_", ct, ".tsv")), 
+              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+```
+### Get overlap with ggVennDiagram
+With ggvenn
+```{r}
+
+# colors if LB vs LN: c("#1B9E77", "#D95F02")
+# if patient 3 vs 6: c("#1B9E77", "#7570B3")
+cols <- c("#1B9E77", "#D95F02")
+if(res.shorter.ct$pvalue <= .Machine$double.eps){
+  text <- paste0("odds ratio = ", round(res.shorter.ct$odds_ratio, 2), 
+                          "\np-value <= ", signif(res.shorter.ct$pvalue, 3))
+} else {
+  text <- paste0("odds ratio = ", round(res.shorter.ct$odds_ratio, 2), 
+                          "\np-value = ", signif(res.shorter.ct$pvalue, 3))
+}
+
+p <- ggvenn(tes.shorter.ct, show_percentage = FALSE,
+            fill_color = cols,
+            text_size = 5,
+            set_name_size = 5)+
+  annotate("text", x = 0, y = -1.5, label = text, size = 5)
+ggsave(file.path(out_dir, paste0('venn_genes_shorter_', ct, '.png')),
+       plot = p, 
+       device = "png", width = 7, height = 7, units = "cm", dpi = 300,
+       scale = 1)
+
+# lengthening
+if(res.longer.ct$pvalue <= .Machine$double.eps){
+  text <- paste0("odds ratio = ", round(res.longer.ct$odds_ratio, 2), 
+                          "\np-value <= ", signif(res.longer.ct$pvalue, 3))
+} else {
+  text <- paste0("odds ratio = ", round(res.longer.ct$odds_ratio, 2), 
+                          "\np-value = ", signif(res.longer.ct$pvalue, 3))  
+}
+
+p <- ggvenn(tes.longer.ct, show_percentage = FALSE,
+            fill_color = cols,
+            text_size = 5,
+            set_name_size = 5)+
+  annotate("text", x = 0, y = -1.5, label = text, size = 5)
+ggsave(file.path(out_dir, paste0('venn_genes_longer_', ct, '.png')),
+       plot = p, 
+       device = "png", width = 7, height = 7, units = "cm", dpi = 300,
+       scale = 1)
+```

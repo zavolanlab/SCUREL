@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - numpy=1.17.2
+  - pandas=0.25.2
+  - argparse=1.4.0
