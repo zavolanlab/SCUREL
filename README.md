@@ -51,8 +51,8 @@ Installation procedure on Linux (tested on CentOS 7).
 Clone the pipeline and follow the instructions below. This requires *git* installed and configured (see [github git cheat sheet](https://github.github.com/training-kit/downloads/github-git-cheat-sheet.pdf)).
 
 ```bash
-git clone https://git.scicore.unibas.ch/zavolan_group/pipelines/sc-polyasite.git sc-polyasite
-cd sc-polyasite
+git clone https://github.com/zavolanlab/SCUREL.git
+cd SCUREL
 ```
 
 ## Step 2: Install Miniconda 3
@@ -71,23 +71,23 @@ conda list
 
 ## Step 3: Install snakemake
 
-The easiest way to install snakemake and all dependencies for this pipeline, is to create and activate the conda environment named *sc-polyasite* from the supplied `envs/sc-polyasite.yaml` file via
+The easiest way to install snakemake and all dependencies for this pipeline, is to create and activate the conda environment named *scurel* from the supplied `envs/scurel.yaml` file via
 
 ```bash
-conda env create --name sc-polyasite --file envs/sc-polyasite.yaml
-conda activate sc-polyasite
+conda env create --name scurel --file envs/scurel.yaml
+conda activate scurel
 ```
 
-Alternatively, snakemake can be installed as standalone package into a new environment *sc-polyasite* via
+Alternatively, snakemake can be installed as standalone package into a new environment *scurel* via
 
 ```bash
-conda create -n sc-polyasite -c bioconda snakemake
+conda create -n scurel -c bioconda snakemake
 ```
 
 Then the environment must be activated with
 
 ```bash
-conda activate sc-polyasite
+conda activate scurel
 ```
 
 # Prerequesites

@@ -1,4 +1,4 @@
-name: sc-polyasite
+name: scurel
 channels:
   - conda-forge
   - bioconda
