@@ -11,32 +11,24 @@
     "cellranger_count":
     {
     "queue":"1day",
-    "time":"12:00:00",
-    "threads":"8",
-    "mem":"64G"
+    "time":"12:00:00"
     },
     "filter_high_quality":
     {
-        "time": "03:00:00",
-        "threads": "2",
-        "mem": "2G"
+        "time": "03:00:00"
     },
     "de_duplicate":
     {
-        "time": "03:00:00",
-        "threads": "2",
-        "mem": "2G"
+        "time": "03:00:00"
     },
     "filter_non_CB_tags":
     {
-        "time": "06:00:00",
-        "mem": "4G"
+        "time": "06:00:00"
     },
     "TE_bed":
     {
         "queue": "30min",
-        "time": "00:30:00",
-        "mem": "2G"
+        "time": "00:30:00"
     },
     "cumulative_coverage_3p_end":
     {

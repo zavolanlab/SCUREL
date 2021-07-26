@@ -9,7 +9,7 @@ Setup
 ```{r setup, include=FALSE, cache = FALSE}
 library("knitr")
 ## setting working directory
-opts_knit$set(root.dir = "~/Documents/gitlab/sc-polyasite")
+opts_knit$set(root.dir = "~/SCUREL")
 ```
 
 # User settings

@@ -5,8 +5,7 @@
 # creates a subdirectory for each sample
 mapping_dir: "scurel_out/mapping"
 # Genome annotation for TE construction; BED will be save in above directory
-# TODO: change default file
-genome_annotation: ""
+genome_annotation: "data/ref_transcriptome/refseq/mm10/genome.GRCm38.p6.adj.sorted.gff"
 # params for TE creation
 TE_bed:
   type_id: "gene_biotype"
@@ -21,7 +20,7 @@ sample_origin: [] # e.g. ["tumor", "control"]
 cell_type_annotation: "scurel_out/cell_type_annotation/cell_type_annotations.csv"
 
 ##############
-# define an output directory (depends on defsamples, cell_type_annotation, tandem_pas)
+# define an output directory (depends on defsamples, cell_type_annotation)
 out_dir: "scurel_out"
 
 # define execution mode, either cell_type_comparison or cell_state_comparison

@@ -23,6 +23,8 @@ This repository also contains a script for cell type annotation based on marker 
 
 * A configuration file (`config/config.yaml`) with fields for file paths, directory locations and parameters. This file and all other files can be copied, adjusted and renamed. It is important to adjust all file paths in this configuration file.
 * A samples table (see skeleton `config/samples.tsv`) with tab separated columns **sample**, **name**, **fastqs** and **origin** for site of origin. The file is specified in field **defsamples**.
+  * The field **name** is used for the sample names as occurring in the 10X sequencing files. The actual file names must follow cellrangers naming convention (see [here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/fastq-input)).
+  * **fastqs** denotes the directory where the samples reside. 
   * Mapped reads (BAM) obtained with *cellranger count* can be used. The BAM files need to be stored in directory `cellranger_count/{sample}/outs/`.
   * Alternatively, samples can be provided as raw reads (FASTQ) from 10x Genomics 3' end sc-RNA-seq. A helper rule can execute *cellranger count*, for which the reference transcriptome for *cellranger* is necessary. *cellranger* must be obtained separately and can be downloaded [here](https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest).
 * Cell type annotations (`cell_type_annotations.csv`), a comma separated table with assignment of each cell to a cell type. For more details on how to obtain this, see section *Prerequesites* below.
@@ -108,7 +110,7 @@ rule finish:
 
 ## Annotate cell barcodes
 
-In order to run the pipeline, a file named `cell_type_annotations.csv` with columns **orig.ident**, **cell**, **cell_type** is needed. 
+In order to run the pipeline, a file named `cell_type_annotations.csv` with columns **orig.ident** (identical to **sample**), **cell**, **cell_type** is needed. 
 
 One way to create this is by running `sc_quant_and_cell_types.Rmd` step-by-step.
 > **Important**: The steps below require manual execution! 
@@ -165,7 +167,7 @@ The pipeline is currently tailored to execution on a slurm cluster with CentOS 7
 If necessary, adjust queue and time constraints in `config/cluster.json`. 
 Additionally, memory and thread usage can be changed in the individual snakemake rules.
 
-> Note that *cellranger* is loaded manually on the slurm cluster.
+> Note that *cellranger* is loaded manually on the slurm cluster. This has to be specified within the file `workflow/mapping.smk` inside the rule *cellranger_count* as a first statement in the shell command (e.g. `ml CellRanger/5.0.0;`).
 
 Run in the directory of this pipeline and specify CONFIGFILE
 
