@@ -6,10 +6,8 @@ For files between 500 - 1000 MB, each core needs approx. 5GB RAM.
 
 import logging
 import argparse
-import os
 import random
 import sys
-from itertools import repeat
 import multiprocessing
 
 import numpy as np
@@ -39,25 +37,21 @@ def write_sample(df, file):
 
 def get_coverage(te, sample):
     'Obtain 3p end coverage for sample in correct strand'
-    tmp = sample[sample.chrom == te.chr]
-    tmp = tmp[tmp.start >= te.TE_start]
-    tmp = tmp[tmp.end <= te.TE_end]
+    tmp = sample.query('chrom == @te.chr and start >= @te.TE_start and end <= @te.TE_end',
+        inplace = False)
     return(tmp)
 
-def unique(list1): 
-    x = np.array(list1) 
-    return(np.unique(x).tolist()) 
-
 def fill_coverage(rnd):
-    'Create new pandas Dataframe from list of end positions'
-    rows = unique(rnd)
+    'Create new pandas Dataframe from numpy.ndarray of end positions'
+    rows = np.unique(rnd) # also sorts the elements of the array
     res = pd.DataFrame({'start': [x - 1 for x in rows], 
         'end': rows, 
-        'coverage': [rnd.count(x) for x in rows]})
+        'coverage': [(rnd == x).sum() for x in rows]})
     return res
 
 def extend_coverage(TE, df):
     'Extend dataframe to include zero coverage and TE borders'
+    df = df.copy()
     df.reset_index(drop = True, inplace = True)
     # include zero coverage
     for i in range(len(df.index)-1):
@@ -79,20 +73,17 @@ def get_randomised_reads(cov1, cov2, n_reads):
     'Randomise labels in coverage dataframes cov1 and cov2, with n_reads reads for sample1.'
     # obtain chromosome
     chrom = set(cov1.chrom).pop()
-    # create vector of bp positions, one for each read
+    # create numpy array of bp positions, one for each read
     vec = np.append(np.repeat(np.array(cov1.end), cov1.coverage), 
-        np.repeat(np.array(cov2.end), cov2.coverage)).tolist()
-    # sample reads from vector
-    rnd = random.sample(vec, n_reads)
-    # sort base positions
-    rnd.sort()
+        np.repeat(np.array(cov2.end), cov2.coverage))
+    # sample reads from indeces
+    rnd_ind = random.sample(range(len(vec)), n_reads)
+    rnd = vec[rnd_ind]
     # prepare new df
     tmp1 = fill_coverage(rnd)
     tmp1.insert(loc = 0, column = 'chrom', value = chrom)
     # get coverage for sample2 by removing elements from vec
-    for entry in rnd:
-        vec.remove(entry)
-    vec.sort()
+    vec = np.delete(vec, rnd_ind)
     tmp2 = fill_coverage(vec)
     tmp2.insert(loc = 0, column = 'chrom', value = chrom)
     return([tmp1, tmp2])
@@ -112,14 +103,15 @@ def compute_random_labels(zip_tuple):
         return [cov1, extend_coverage(te, cov2)]
     elif n2 == 0:
         return [extend_coverage(te, cov1), cov2]
-    if n1+n2 > sys.maxsize:
-        logging.warn("Sum of coverage would exceed maximum size of python list! \
-            Will reduce coverage by 2 until the sum is below the maximum. \
-            TE affected: %s" % te.TE_id)
-        while(n1+n2 > sys.maxsize):
+    max_size = (pow(2,31)-1) # use 32-bit as maximum size
+    if n1+n2 > max_size:
+        logging.warn("""Sum of coverage would exceed maximum size of python list! 
+            Will reduce coverage by 2 until the sum is below the maximum. 
+            TE affected: %s""" % te.TE_id) 
+        while(n1+n2 > max_size):
             # Integer ceiling division
-            cov1.coverage = -(cov1.coverage // -2)
-            cov2.coverage = -(cov2.coverage // -2)
+            cov1 = cov1.assign(coverage = -(cov1.coverage // -2))
+            cov2 = cov2.assign(coverage = -(cov2.coverage // -2))
             n1 = cov1.coverage.sum()
             n2 = cov2.coverage.sum()
     # Main logic: randomise reads in the two samples
@@ -140,13 +132,10 @@ def pool_starmap(TEs, num_cores):
         'coverage': pd.Series([], dtype = np.int64)})
     try:
         pool = multiprocessing.Pool(num_cores)
-        logging.info("Started multiprocessing.Pool.imap with %s cores." % num_cores)
-        out = pool.imap(compute_random_labels, 
+        logging.info("Started multiprocessing.Pool.map with %s cores." % num_cores)
+        out = pool.map(compute_random_labels, 
             TEs.iterrows(),
             chunksize = 100)
-        for entry in out:
-            out1 = out1.append(entry[0], ignore_index = True)
-            out2 = out2.append(entry[1], ignore_index = True)
     except Exception as e:
         logging.error("Error occurred during multiprocessing: " + str(e))
         pool.terminate()
@@ -155,6 +144,9 @@ def pool_starmap(TEs, num_cores):
         pool.close()
         pool.join() 
         logging.info("multiprocessing.Pool closed.")
+    for entry in out:
+            out1 = out1.append(entry[0], ignore_index = True)
+            out2 = out2.append(entry[1], ignore_index = True)
     return((out1, out2))
 
 #### main program
@@ -162,22 +154,16 @@ def main():
     parser = argparse.ArgumentParser(description="Randomise 3p end positions in BED intervals (stranded) for two samples (stranded).")
     parser.add_argument('-bed', '--bed-file', dest='bed_file', 
       required=True, help='Input BED file')
-    parser.add_argument('-s1p', '--one-plus', dest='sample1_plus', 
-      required=True, help='Sample 1 3p end coverage bedgraph plus strand')
-    parser.add_argument('-s1m', '--one-minus', dest='sample1_minus', 
-      required=True, help='Sample 1 3p end coverage bedgraph minus strand')
-    parser.add_argument('-s2p', '--two-plus', dest='sample2_plus', 
-      required=True, help='Sample 2 3p end coverage bedgraph plus strand')
-    parser.add_argument('-s2m', '--two-minus', dest='sample2_minus', 
-      required=True, help='Sample 2 3p end coverage bedgraph minus strand')
-    parser.add_argument('-o1p', dest='out1_plus', 
-      required=False, default="randomised1.plus.bedgraph", help='Output file for sample1 plus strand')
-    parser.add_argument('-o1m', dest='out1_minus', 
-      required=False, default="randomised1.minus.bedgraph", help='Output file for sample1 minus strand')
-    parser.add_argument('-o2p', dest='out2_plus', 
-      required=False, default="randomised2.plus.bedgraph", help='Output file for sample2 plus strand')
-    parser.add_argument('-o2m', dest='out2_minus', 
-      required=False, default="randomised2.minus.bedgraph", help='Output file for sample2 minus strand')
+    parser.add_argument('-s1', '--one', dest='sample1', 
+      required=True, help='Sample 1 3p end coverage bedgraph stranded')
+    parser.add_argument('-s2', '--two', dest='sample2', 
+      required=True, help='Sample 2 3p end coverage bedgraph stranded')
+    parser.add_argument('-o1', dest='out1', 
+      required=False, default="randomised1.bedgraph", help='Output file for sample1 stranded')
+    parser.add_argument('-o2', dest='out2', 
+      required=False, default="randomised2.bedgraph", help='Output file for sample2 stranded')
+    parser.add_argument('-s', '--strand', dest='strand',
+        required=True, help='Strand orientation, either plus or minus.')
     parser.add_argument('-c', '--cores', dest='NUM_CORES',
       required=False, default=1, type=int,
       help='Specify number of cores for parallelisation. Default: 1.')
@@ -187,6 +173,7 @@ def main():
     # logging settings: from snakemake
     logging.basicConfig(filename=args.log_file, level=logging.DEBUG, 
                     format='%(asctime)s %(levelname)s:%(message)s', datefmt='%Y-%m-%d %H:%M:%S ')
+    # Load terminal exons
     TEs = pd.read_csv(args.bed_file,
             sep="\t", header=None, 
             names=["chr", "TE_start", "TE_end", "TE_id", "score", "strand"],
@@ -195,29 +182,22 @@ def main():
     global sample1 
     global sample2
     
-    sample1_plus = load_sample(args.sample1_plus)
-    sample2_plus = load_sample(args.sample2_plus)
-    sample1 = sample1_plus
-    sample2 = sample2_plus
+    # translate strand orientation
+    if args.strand == 'plus':
+        strand = '+'
+    elif args.strand == 'minus':
+        strand = '-'
+    else:
+        logging.error("No valid strand orientation supplied. Only plus or minus allowed, but given: " % str(args.strand))
+    sample1 = load_sample(args.sample1)
+    sample2 = load_sample(args.sample2)
     # obtain coverage in TE region for plus strand
-    TEs_plus = TEs[TEs.strand == '+']
-    out1_plus, out2_plus = pool_starmap(TEs_plus, args.NUM_CORES)
-    logging.info("Finished processing %d TEs on plus strand" % (TEs_plus.shape[0]))
+    TEs_strand = TEs[TEs.strand == strand]
+    out1, out2 = pool_starmap(TEs_strand, args.NUM_CORES)
+    logging.info("Finished processing %d TEs on %s strand" % (TEs_strand.shape[0], args.strand))
     # write to file
-    write_sample(out1_plus, args.out1_plus)
-    write_sample(out2_plus, args.out2_plus)
-    del out1_plus
-    del out2_plus
-    # for minus strand
-    sample1_minus = load_sample(args.sample1_minus)
-    sample2_minus = load_sample(args.sample2_minus)
-    sample1 = sample1_minus
-    sample2 = sample2_minus
-    TEs_minus = TEs[TEs.strand == '-']
-    out1_minus, out2_minus = pool_starmap(TEs_minus, args.NUM_CORES)
-    logging.info("Finished processing %d TEs on minus strand" % (TEs_minus.shape[0]))
-    write_sample(out1_minus, args.out1_minus)
-    write_sample(out2_minus, args.out2_minus)
+    write_sample(out1, args.out1)
+    write_sample(out2, args.out2)
     logging.info("Script finished successfully.")
 
 if __name__ == "__main__":
