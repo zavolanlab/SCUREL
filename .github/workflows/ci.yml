@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  setup-env:
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Checkout SCUREL repository
+        uses: actions/checkout@v2
+
+      - name: Setup miniconda & SCUREL main env
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.7.4
+          miniconda-version: 4.7.12
+          auto-update-conda: false
+          environment-file: envs/scurel.yaml
+          activate-environment: scurel
+          auto-activate-base: false
+
+      - name: Display all miniconda & env info
+        shell: bash -l {0}
+        run: |
+          conda info -a
+          conda list
+
+  #tests-snakemake-DAG:
+  #  needs: setup-env
+  #  runs-on: ubuntu-20.04
+  #  steps:
+
+  #    - name: Checkout zarp repository
+  #      uses: actions/checkout@v2
+
+  #    - name: Run test script
+  #      shell: bash -l {0}
+  #      run: bash tests/test_create_dag_image/test.sh
+
+  #tests-snakemake-rulegraph:
+  #  needs: setup-env
+  #  runs-on: ubuntu-20.04
+  #  steps:
+
+  #    - name: Checkout zarp repository
+  #      uses: actions/checkout@v2
+
+  #    - name: Run test script
+  #      shell: bash -l {0}
+  #      run: bash tests/test_create_rule_graph/test.sh
+
+  #tests-integration-conda:
+  #  needs:
+  #    - tests-snakemake-DAG
+  #    - tests-snakemake-rulegraph
+  #  runs-on: ubuntu-20.04
+  #  steps:
+
+  #    - name: Checkout zarp repository
+  #      uses: actions/checkout@v2
+
+  #    - name: Run test script
+  #      shell: bash -l {0}
+  #      run: bash tests/test_integration_workflow_multiple_lanes/test.local.sh
