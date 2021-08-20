@@ -1,5 +1,5 @@
-sample	name	fastqs	sampling_site	Patient_piece	origin	patient
-sample3a	BT1290	.test/integration-dry/data	tumour edge	3_edge	tumor	patient3
-sample3b	BT1291	.test/integration-dry/data	tumor middle (in between core and edge sample)	3_middle	tumor	patient3
-sample3c	BT1292	.test/integration-dry/data	tumor core	3_core	tumor	patient3
-sample3d	BT1293	.test/integration-dry/data	normal tissue adjacent to tumour	3_normal	normal	patient3
+sample	name	fastqs	origin
+s1	A1	.test/integration-dry/data	normal
+s2	A2	.test/integration-dry/data	normal
+s3	B1	.test/integration-dry/data	tumor
+s4	B2	.test/integration-dry/data	tumor

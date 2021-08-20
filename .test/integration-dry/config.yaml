@@ -3,9 +3,9 @@
 
 # define a directory for mapping results 
 # creates a subdirectory for each sample
-mapping_dir: "./test/integration-dry/scurel_out/mapping"
+mapping_dir: ""
 # Genome annotation for TE construction; BED will be save in above directory
-genome_annotation: "./test/integration-dry/data/ref_transcriptome/refseq/mm10/genome.GRCm38.p6.adj.sorted.gff"
+genome_annotation: ".test/integration-dry/data/genome.GRCm38.p6.adj.sorted.gff"
 # params for TE creation
 TE_bed:
   type_id: "gene_biotype"
@@ -13,20 +13,20 @@ TE_bed:
   source: "mRNA lnc_RNA"
 
 # dataset specific entries
-defsamples: "./test/integration-dry/samples.tsv"
+defsamples: ".test/integration-dry/samples.tsv"
 # Cell types in cell_type_annotation file, used for AUC calculation
 cell_types: [] # e.g. ["B_cell", "T_cell"]
-sample_origin: [] # e.g. ["tumor", "control"]
-cell_type_annotation: "./test/integration-dry/cell_type_annotation/cell_type_annotations.csv"
+sample_origin: ["normal", "tumor"] # e.g. ["tumor", "normal"]
+cell_type_annotation: ""
 
 ##############
 # define an output directory (depends on defsamples, cell_type_annotation)
-out_dir: "./test/integration-dry/scurel_out"
+out_dir: ""
 
 # define execution mode, either cell_type_comparison or cell_state_comparison
 # each result is saved in an own directory within out_dir
 # Analysis results will be in directory auc for mode cell_state_comparison and auc_comparisons for cell_type_comparison
-mode: "cell_type_comparison" # TODO: replace mode by checking if comparisons file used
+mode: "cell_state_comparison" # TODO: replace mode by checking if comparisons file used
 
 ##############
 # additional fields for cell_type_comparison (leave empty file path if mode not selected)
@@ -48,15 +48,15 @@ auc_analysis:
 
 ##############
 # project dirs
-envs_dir: "envs"
+envs_dir: ""
 script_dir: "scripts"
 # log directories
-local_log: "./test/integration-dry/logs/local_log"
-cluster_log: "./test/integration-dry/logs/cluster_log"
+local_log: ""
+cluster_log: ""
 
 ##############
 # genome annotations for cellranger
-transcriptome: "./test/integration-dry/data/refdata-cellranger-GRCh38-3.0.0/"
+transcriptome: ""
 
 ##############
 # General parameters 

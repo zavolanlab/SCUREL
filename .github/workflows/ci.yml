@@ -33,14 +33,19 @@ jobs:
           conda info -a
           conda list
 
+      # test with cell state comparison configfile
       - name: Run snakemake rulegraph
         shell: bash -l {0}
         run: bash build_rulegraph.sh .test/integration-dry/config.yaml
 
+      # test with cell state comparison configfile
       - name: Build snakemake DAG
         shell: bash -l {0}
         run: bash build_dag.sh .test/integration-dry/config.yaml
 
-      ## build envs
+      # test with cell state comparison configfile
+      - name: Build conda envs for specific rules
+        shell: bash -l {0}
+        run: snakemake --configfile .test/integration-dry/config.yaml -np
 
       ## dry run
