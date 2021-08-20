@@ -43,7 +43,7 @@ jobs:
 
       - name: Run test script
         shell: bash -l {0}
-        run: bash build_dag.sh .test/integration-dry/config.yaml
+        run: snakemake --version #bash build_dag.sh .test/integration-dry/config.yaml
 
   #tests-snakemake-rulegraph:
   #  needs: setup-env
