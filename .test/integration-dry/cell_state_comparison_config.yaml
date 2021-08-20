@@ -5,7 +5,7 @@
 # creates a subdirectory for each sample
 mapping_dir: ""
 # Genome annotation for TE construction; BED will be save in above directory
-genome_annotation: ".test/integration-dry/data/genome.GRCm38.p6.adj.sorted.gff"
+genome_annotation: ".test/integration-dry/genome.GRCm38.p6.adj.sorted.gff"
 # params for TE creation
 TE_bed:
   type_id: "gene_biotype"
