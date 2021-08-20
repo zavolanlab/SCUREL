@@ -48,11 +48,11 @@ auc_analysis:
 
 ##############
 # project dirs
-envs_dir: ""
+envs_dir: "envs"
 script_dir: "scripts"
 # log directories
-local_log: ""
-cluster_log: ""
+local_log: ".test/integration-dry/logs/local_log"
+cluster_log: ".test/integration-dry/logs/cluster_log"
 
 ##############
 # genome annotations for cellranger
