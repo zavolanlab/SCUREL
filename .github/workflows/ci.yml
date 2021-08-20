@@ -24,8 +24,8 @@ jobs:
           miniconda-version: 4.7.12
           auto-update-conda: false
           environment-file: envs/scurel.yaml
-          activate-environment: scurel
-          auto-activate-base: false
+          activate-environment: ""
+          auto-activate-base: true
 
       - name: Display all miniconda & env info
         shell: bash -l {0}
