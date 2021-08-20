@@ -24,8 +24,8 @@ jobs:
           miniconda-version: 4.7.12
           auto-update-conda: false
           environment-file: envs/scurel.yaml
-          activate-environment: true
-          auto-activate-base: true
+          activate-environment: scurel
+          auto-activate-base: false
 
       - name: Display all miniconda & env info
         shell: bash -l {0}
@@ -40,6 +40,12 @@ jobs:
 
       - name: Checkout SCUREL repository
         uses: actions/checkout@v2
+
+      - name: Display all miniconda & env info
+        shell: bash -l {0}
+        run: |
+          conda info -a
+          conda list
 
       - name: Run test script
         shell: bash -l {0}
