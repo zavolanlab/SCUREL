@@ -48,3 +48,42 @@ jobs:
       - name: snakemake --dryrun
         shell: bash -l {0}
         run: bash exe_dry.sh .test/integration-dry/cell_state_comparison_config.yaml
+
+  cell_type_comparison:
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Checkout SCUREL repository
+        uses: actions/checkout@v2
+
+      - name: Setup miniconda & SCUREL main env
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.6.7
+          miniconda-version: 4.7.12
+          auto-update-conda: false
+          environment-file: envs/scurel.yaml
+          activate-environment: scurel
+          auto-activate-base: false
+
+      - name: Display all miniconda & env info
+        shell: bash -l {0}
+        run: |
+          conda info -a
+          conda list
+
+      #- name: Run snakemake rulegraph
+      #  shell: bash -l {0}
+      #  run: bash build_rulegraph.sh .test/integration-dry/cell_state_comparison_config.yaml
+
+      #- name: Build snakemake DAG
+      #  shell: bash -l {0}
+      #  run: bash build_dag.sh .test/integration-dry/cell_state_comparison_config.yaml
+
+      #- name: Build conda envs for specific rules
+      #  shell: bash -l {0}
+      #  run: snakemake --configfile .test/integration-dry/cell_state_comparison_config.yaml --use-conda --create-envs-only
+
+      #- name: snakemake --dryrun
+      #  shell: bash -l {0}
+      #  run: bash exe_dry.sh .test/integration-dry/cell_state_comparison_config.yaml
