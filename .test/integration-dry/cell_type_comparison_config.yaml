@@ -1,0 +1,64 @@
+##############
+# output directories
+
+# define a directory for mapping results 
+# creates a subdirectory for each sample
+mapping_dir: ""
+# Genome annotation for TE construction; BED will be save in above directory
+genome_annotation: ".test/integration-dry/data/genome.GRCm38.p6.adj.sorted.gff"
+# params for TE creation
+TE_bed:
+  type_id: "gene_biotype"
+  gene_type: "protein_coding lncRNA"
+  source: "mRNA lnc_RNA"
+
+# dataset specific entries
+defsamples: ".test/integration-dry/samples.tsv"
+# Cell types in cell_type_annotation file, used for AUC calculation
+cell_types: ["B_cell", "T_cell"] # e.g. ["B_cell", "T_cell"]
+sample_origin: ["normal", "tumor"] # e.g. ["tumor", "normal"]
+cell_type_annotation: ".test/integration-dry/comparisons.tsv"
+
+##############
+# define an output directory (depends on defsamples, cell_type_annotation)
+out_dir: ""
+
+# define execution mode, either cell_type_comparison or cell_state_comparison
+# each result is saved in an own directory within out_dir
+# Analysis results will be in directory auc for mode cell_state_comparison and auc_comparisons for cell_type_comparison
+mode: "cell_type_comparison" # TODO: replace mode by checking if comparisons file used
+
+##############
+# additional fields for cell_type_comparison (leave empty file path if mode not selected)
+# tab separated file containing three entries for each comparison: an unique identifier, ct1_origin and ct2_origin. Comparison will be performed for ct1 versus ct2. Origin must be same as in sample_origin
+# will create a subdirectory for every comparison (first column)
+comparisons: ".test/integration-dry/comparisons.tsv"
+
+# Parameters (for both modes above)
+# define an analysis prefix (used as wildcard in snakemake)
+analysis_prefix: "cpm2"
+calculation_auc:
+  cpm_threshold: 0
+  quantiles: "0.25 0.75"
+auc_analysis:
+  alpha: 0.01 # Two sided probability tail for significance
+  cpm_threshold: 2 # Expression threshold in counts per million
+  length_threshold: 0 # Minimum TE length given as quantile [0-1]
+  iqr_threshold: 200 # Minimum IQR range (in basepairs) for detection of multiPAS 3'UTRs
+
+##############
+# project dirs
+envs_dir: "envs"
+script_dir: "scripts"
+# log directories
+local_log: ".test/integration-dry/logs/local_log"
+cluster_log: ".test/integration-dry/logs/cluster_log"
+
+##############
+# genome annotations for cellranger
+transcriptome: ""
+
+##############
+# General parameters 
+filter_high_quality:
+  mapq: 30

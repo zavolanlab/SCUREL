@@ -72,18 +72,18 @@ jobs:
           conda info -a
           conda list
 
-      #- name: Run snakemake rulegraph
-      #  shell: bash -l {0}
-      #  run: bash build_rulegraph.sh .test/integration-dry/cell_state_comparison_config.yaml
+      - name: Run snakemake rulegraph
+        shell: bash -l {0}
+        run: bash build_rulegraph.sh .test/integration-dry/cell_type_comparison_config.yaml
 
-      #- name: Build snakemake DAG
-      #  shell: bash -l {0}
-      #  run: bash build_dag.sh .test/integration-dry/cell_state_comparison_config.yaml
+      - name: Build snakemake DAG
+        shell: bash -l {0}
+        run: bash build_dag.sh .test/integration-dry/cell_type_comparison_config.yaml
 
-      #- name: Build conda envs for specific rules
-      #  shell: bash -l {0}
-      #  run: snakemake --configfile .test/integration-dry/cell_state_comparison_config.yaml --use-conda --create-envs-only
+      - name: Build conda envs for specific rules
+        shell: bash -l {0}
+        run: snakemake --configfile .test/integration-dry/cell_type_comparison_config.yaml --use-conda --create-envs-only
 
-      #- name: snakemake --dryrun
-      #  shell: bash -l {0}
-      #  run: bash exe_dry.sh .test/integration-dry/cell_state_comparison_config.yaml
+      - name: snakemake --dryrun
+        shell: bash -l {0}
+        run: bash exe_dry.sh .test/integration-dry/cell_type_comparison_config.yaml
