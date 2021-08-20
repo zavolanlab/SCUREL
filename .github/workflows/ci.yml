@@ -43,7 +43,7 @@ jobs:
 
       - name: Build conda envs for specific rules
         shell: bash -l {0}
-        run: snakemake --configfile .test/integration-dry/config.yaml --use-conda --conda-create-envs-only
+        run: snakemake --configfile .test/integration-dry/config.yaml --use-conda --create-envs-only
 
       - name: snakemake --dryrun
         shell: bash -l {0}
