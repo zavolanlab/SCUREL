@@ -10,7 +10,7 @@ on:
 
 jobs:
 
-  snakemake-graphs:
+  cell_state_comparison:
     runs-on: ubuntu-20.04
     steps:
 
@@ -33,19 +33,18 @@ jobs:
           conda info -a
           conda list
 
-      # test with cell state comparison configfile
       - name: Run snakemake rulegraph
         shell: bash -l {0}
         run: bash build_rulegraph.sh .test/integration-dry/config.yaml
 
-      # test with cell state comparison configfile
       - name: Build snakemake DAG
         shell: bash -l {0}
         run: bash build_dag.sh .test/integration-dry/config.yaml
 
-      # test with cell state comparison configfile
       - name: Build conda envs for specific rules
         shell: bash -l {0}
-        run: snakemake --configfile .test/integration-dry/config.yaml -np
+        run: snakemake --configfile .test/integration-dry/config.yaml --use-conda --conda-create-envs-only
 
-      ## dry run
+      - name: snakemake --dryrun
+        shell: bash -l {0}
+        run: bash exe_dry.sh .test/integration-dry/config.yaml
