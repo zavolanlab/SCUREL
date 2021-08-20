@@ -20,7 +20,7 @@ jobs:
       - name: Setup miniconda & SCUREL main env
         uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: 3.6.7
+          #python-version: 3.6.7
           miniconda-version: 4.7.12
           auto-update-conda: false
           environment-file: envs/scurel.yaml
@@ -49,7 +49,7 @@ jobs:
 
       - name: Run test script
         shell: bash -l {0}
-        run: snakemake --version #bash build_dag.sh .test/integration-dry/config.yaml
+        run: bash build_dag.sh .test/integration-dry/config.yaml
 
   #tests-snakemake-rulegraph:
   #  needs: setup-env
