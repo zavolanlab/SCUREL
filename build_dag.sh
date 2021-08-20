@@ -1,4 +1,3 @@
-#!/usr/bin/bash
 snakemake \
     --configfile $1 \
     --dag -np | dot -Tsvg > images/dag.svg
