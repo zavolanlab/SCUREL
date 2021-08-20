@@ -35,22 +35,12 @@ jobs:
 
       - name: Run snakemake rulegraph
         shell: bash -l {0}
-        run: bash build_rulegraph.sh.sh .test/integration-dry/config.yaml
+        run: bash build_rulegraph.sh .test/integration-dry/config.yaml
 
       - name: Build snakemake DAG
         shell: bash -l {0}
         run: bash build_dag.sh .test/integration-dry/config.yaml
 
-  #tests-integration-conda:
-  #  needs:
-  #    - tests-snakemake-DAG
-  #    - tests-snakemake-rulegraph
-  #  runs-on: ubuntu-20.04
-  #  steps:
+      ## build envs
 
-  #    - name: Checkout zarp repository
-  #      uses: actions/checkout@v2
-
-  #    - name: Run test script
-  #      shell: bash -l {0}
-  #      run: bash tests/test_integration_workflow_multiple_lanes/test.local.sh
+      ## dry run
