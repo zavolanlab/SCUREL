@@ -9,4 +9,4 @@ snakemake \
     --dag -np | dot -Tpng > images/dag.png
 EXIT_STATUS_2=$?
 
-EXIT $EXIT_STATUS_1 || $EXIT_STATUS_2
+exit $EXIT_STATUS_1 || $EXIT_STATUS_2
