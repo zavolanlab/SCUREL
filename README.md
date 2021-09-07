@@ -4,6 +4,8 @@ Author: Dominik Burri
 Date: 2021-06-29 
 -->
 
+[![ci](https://github.com/zavolanlab/SCUREL/workflows/ci/badge.svg?branch=main)](https://github.com/zavolanlab/SCUREL/actions?query=workflow%3Aci)
+
 # Overview
 
 SCUREL (Single Cell 3'Untranslated REgion Length analysis) performs differential 3'UTR length analysis on the level of group of cells.

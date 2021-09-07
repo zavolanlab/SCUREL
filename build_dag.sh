@@ -1,4 +1,6 @@
 #!/usr/bin/bash
+set -o pipefail
+
 snakemake \
     --configfile $1 \
     --dag -np | dot -Tsvg > images/dag.svg

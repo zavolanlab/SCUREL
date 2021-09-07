@@ -1,0 +1,5 @@
+sample	name	fastqs	origin
+s1	A1	.test/integration-dry/data	normal
+s2	A2	.test/integration-dry/data	normal
+s3	B1	.test/integration-dry/data	tumor
+s4	B2	.test/integration-dry/data	tumor
