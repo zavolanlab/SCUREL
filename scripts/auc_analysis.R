@@ -551,5 +551,5 @@ if(!is.null(IQR_THRESHOLD) & length(which(colnames(df.filtered) %in% req.cols)) 
 # save complete filtered df
 write.table(df.filtered,
             file = file.path(out_dir, paste0(out.prefix, "TEs_filtered_complete_", ct, ".tsv")), 
-            sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+            sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 #######
