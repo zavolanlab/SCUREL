@@ -1,12 +1,43 @@
 <!-- 
-Title: sc-polyAsite description 
+Title: SCUREL description
 Author: Dominik Burri
 Date: 2021-06-29 
 -->
 
-[![ci](https://github.com/zavolanlab/SCUREL/workflows/ci/badge.svg?branch=main)](https://github.com/zavolanlab/SCUREL/actions?query=workflow%3Aci)
+<img align="right" width="50" height="50" src="images/logo.128px.png">
 
-# Overview
+# SCUREL
+
+[![ci](https://github.com/zavolanlab/SCUREL/workflows/ci/badge.svg?branch=main)](https://github.com/zavolanlab/SCUREL/actions?query=workflow%3Aci)
+[![GitHub issues](https://img.shields.io/github/issues/zavolanlab/scurel)](https://github.com/zavolanlab/scurel/issues)
+[![GitHub license](https://img.shields.io/github/license/zavolanlab/scurel)](https://github.com/zavolanlab/SCUREL/blob/main/LICENSE)
+
+SCUREL is a method to detect 3'UTR changes from scRNA-seq data.
+
+# Table of Contents
+
+- [SCUREL](#scurel)
+  - [Table of Contents](#table-of-contents)
+  - [General information](#general-information)
+    - [Input](#input)
+    - [Output](#output)
+  - [Installation](#installation)
+    - [Step 1: Clone this pipeline](#step-1-clone-this-pipeline)
+    - [Step 2: Install Miniconda 3](#step-2-install-miniconda-3)
+    - [Step 3: Install Snakemake](#step-3-install-snakemake)
+  - [Prerequesites](#prerequesites)
+    - [Map reads](#map-reads)
+    - [Annotate cell barcodes](#annotate-cell-barcodes)
+  - [Pipeline execution](#pipeline-execution)
+    - [Dry run](#dry-run)
+    - [Local](#local)
+    - [Slurm](#slurm)
+    - [Remove output](#remove-output)
+  - [Analysis](#analysis)
+  - [Contributing](#contributing)
+  - [Contact](#contact)
+
+## General information
 
 SCUREL (Single Cell 3'Untranslated REgion Length analysis) performs differential 3'UTR length analysis on the level of group of cells.
 Check the preprint for more information: https://doi.org/10.1101/2021.06.30.450496.
@@ -21,7 +52,7 @@ The framework is written as a [Snakemake](https://snakemake.readthedocs.io/en/st
 
 This repository also contains a script for cell type annotation based on marker genes using [Seurat](https://satijalab.org/seurat/).
 
-## Input
+### Input
 
 * A configuration file (`config/config.yaml`) with fields for file paths, directory locations and parameters. This file and all other files can be copied, adjusted and renamed. It is important to adjust all file paths in this configuration file.
 * A samples table (see skeleton `config/samples.tsv`) with tab separated columns **sample**, **name**, **fastqs** and **origin** for site of origin. The file is specified in field **defsamples**.
@@ -34,7 +65,7 @@ This repository also contains a script for cell type annotation based on marker 
   * The script `scripts/build_refseq.py` is intended to build a suitable genome annotation file from Refseq reads mapped with *cellranger*. In particular, it changes chromosome names to the one used by *cellranger* and subsets by removing other chromosomes such as unlocalized-scaffolds or fixed-patches. Additionally, it filters by predicted (Gnomon) entries.
 
 
-## Output
+### Output
 
 All intermediate files and results are saved in the directory specified in field **out_dir** in `config/config.yaml`.
 Results are saved in different subdirectories for execution modes:
@@ -46,11 +77,11 @@ Results are saved in different subdirectories for execution modes:
 
 Each subdirectory contains a directory `analysis_out` with plots and list of TEs with significant changes in 3'UTR length. The change in 3'UTR length is always reported in respect to the first sample (either cell type or first entry in *sample_origin*). For example, one compares T cells in tumor versus control tissue. Then, the AUC analyses that report 3'UTR lengthening mean that this lengthening in observed in tumor tissue in comparison to control tissue. Also, AUC values < 0.5 indicate lengthening in the first sample (tumor tissue). The same applies when performing cell type comparison, the first cell type is compared against the second one.
 
-# Installation
+## Installation
 
 Installation procedure on Linux (tested on CentOS 7).
 
-## Step 1: Clone this pipeline
+### Step 1: Clone this pipeline
 
 Clone the pipeline and follow the instructions below. This requires *git* installed and configured (see [github git cheat sheet](https://github.github.com/training-kit/downloads/github-git-cheat-sheet.pdf)).
 
@@ -59,7 +90,7 @@ git clone https://github.com/zavolanlab/SCUREL.git
 cd SCUREL
 ```
 
-## Step 2: Install Miniconda 3
+### Step 2: Install Miniconda 3
 
 ```bash
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -73,7 +104,7 @@ Test installation with
 conda list
 ```
 
-## Step 3: Install snakemake
+### Step 3: Install Snakemake
 
 The easiest way to install snakemake and all dependencies for this pipeline, is to create and activate the conda environment named *scurel* from the supplied `envs/scurel.yaml` file via
 
@@ -94,9 +125,9 @@ Then the environment must be activated with
 conda activate scurel
 ```
 
-# Prerequesites
+## Prerequesites
 
-## Map reads
+### Map reads
 
 If one starts from FASTQ, the reads need to be mapped. We provide a wrapper for *cellranger* in `workflow/mapping.smk`. The rules map FASTQ files in the given directories set in `config/samples.tsv` and filters reads. 
 
@@ -110,7 +141,7 @@ rule finish:
         sample = samples.index)
 ```
 
-## Annotate cell barcodes
+### Annotate cell barcodes
 
 In order to run the pipeline, a file named `cell_type_annotations.csv` with columns **orig.ident** (identical to **sample**), **cell**, **cell_type** is needed. 
 
@@ -119,19 +150,19 @@ One way to create this is by running `sc_quant_and_cell_types.Rmd` step-by-step.
 >
 > Also, in order to define cell types of interest marker genes for each cell type are needed.
 
-### Cell type identification with marker genes
+#### Cell type identification with marker genes
 
 The procedure in `sc_quant_and_cell_types.Rmd` implements single cell gene expression quantification and determination of the major cell types based on [Lambrechts et al. 2018](https://doi.org/10.1038/s41591-018-0096-5). The best way to explore it is by using [RStudio](https://www.rstudio.com/). It is adviced to carefully run the script on new datasets and check the parameters and adjust as needed (e.g. the dimensionality of the dataset).
 The output will be a file containing for each cell its cell type annotation (`cell_type_annotations.csv`).
 
 
-# Pipeline execution
+## Pipeline execution
 
 The following files should be copied and adjusted:
 - `config/config.yaml`
 - `config/samples.tsv`
 
-## Dry run
+### Dry run
 
 A dry run can be executed to check if everything is in place and the correct directories are used.
 
@@ -150,7 +181,7 @@ bash build_dag.sh CONFIGFILE
 bash build_rulegraph.sh CONFIGFILE
 ```
 
-## Local
+### Local
 
 When executing the pipeline locally (i.e. on personal machine), *cellranger v3* has to be installed to map 10x raw fastq files to the genome: [link](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/installation).
 Please note that *cellranger* requires a minimum of 64GB RAM (see [system requirements](https://support.10xgenomics.com/single-cell-gene-expression/software/overview/system-requirements)).
@@ -163,7 +194,7 @@ Run in the directory of this pipeline and specify CONFIGFILE
 bash exe_snakemake_local.sh CONFIGFILE
 ```
 
-## Slurm
+### Slurm
 
 The pipeline is currently tailored to execution on a slurm cluster with CentOS 7. Like this, only `config/config.yaml` has to be adjusted.
 If necessary, adjust queue and time constraints in `config/cluster.json`. 
@@ -177,7 +208,7 @@ Run in the directory of this pipeline and specify CONFIGFILE
 bash exe_snakemake_cluster.sh CONFIGFILE
 ```
 
-## Remove output
+### Remove output
 
 With
 
@@ -187,7 +218,7 @@ bash remove_logs.sh
 
 all log files from the snakemake runs will be removed.
 
-# Analysis
+## Analysis
 
 The following scripts are used for the pathway analysis.
 
@@ -199,3 +230,13 @@ The following scripts are used for the pathway analysis.
 * `scripts/plot_auc.py`: Command line script to plot graph to compute AUC.
 * `scripts/plotting/heatmap_enrichment.R`: Command line script to plot pathway enrichment for multiple pathways as heatmap.
 * `scripts/analysis/table_all_APA.R`: Interactive script to gather all significant APA shortening events and create binary table. 
+
+## Contributing
+
+This project lives off your contributions, be it in the form of bug reports, feature requests, discussions, or fixes and other code changes. Please refer to the [contributing](CONTRIBUTING.md) guidelines if you are interested to contribute. Please mind the [code of conduct](CODE_OF_CONDUCT.md) for all interactions with the community.
+
+## Contact
+
+For questions or suggestions regarding the code, please use the [issue tracker](https://github.com/zavolanlab/SCUREL/issues). For any other inquiries, please contact us by email: zavolab-biozentrum@unibas.ch.
+
+2021 [Zavolab, Biozentrum, University of Basel](https://zavolan.biozentrum.unibas.ch)
