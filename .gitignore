@@ -266,3 +266,5 @@ po/*~
 
 # Directories
 scurel_out/
+cellranger_count/
+logs/

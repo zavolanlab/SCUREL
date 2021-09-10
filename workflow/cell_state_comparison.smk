@@ -10,45 +10,35 @@ rule label_randomisation:
     '''
     input:
         bed = os.path.join(config['mapping_dir'], "terminal_exons.bed"),
-        one_plus = expand(os.path.join(config['out_dir'], "coverage_3p", 
-          "{{cell_type}}_{origin}_plus.corr.bedgraph"),
+        one = expand(os.path.join(config['out_dir'], "coverage_3p", 
+          "{{cell_type}}_{origin}_{{strand}}.corr.bedgraph"),
           origin = SAMPLE_ORIGIN[0]),
-        one_minus = expand(os.path.join(config['out_dir'], "coverage_3p", 
-          "{{cell_type}}_{origin}_minus.corr.bedgraph"),
-          origin = SAMPLE_ORIGIN[0]),
-        two_plus = expand(os.path.join(config['out_dir'], "coverage_3p", 
-          "{{cell_type}}_{origin}_plus.corr.bedgraph"),
-          origin = SAMPLE_ORIGIN[1]),
-        two_minus = expand(os.path.join(config['out_dir'], "coverage_3p", 
-          "{{cell_type}}_{origin}_minus.corr.bedgraph"),
+        two = expand(os.path.join(config['out_dir'], "coverage_3p", 
+          "{{cell_type}}_{origin}_{{strand}}.corr.bedgraph"),
           origin = SAMPLE_ORIGIN[1])
     output:
-        one_plus = expand(os.path.join(config['out_dir'], "randomised_coverage", 
-          "{{cell_type}}_{origin}_plus.corr.bedgraph"),
+        one = expand(os.path.join(config['out_dir'], "randomised_coverage", 
+          "{{cell_type}}_{origin}_{{strand}}.corr.bedgraph"),
           origin = SAMPLE_ORIGIN[0]),
-        one_minus = expand(os.path.join(config['out_dir'], "randomised_coverage", 
-          "{{cell_type}}_{origin}_minus.corr.bedgraph"),
-          origin = SAMPLE_ORIGIN[0]),
-        two_plus = expand(os.path.join(config['out_dir'], "randomised_coverage", 
-          "{{cell_type}}_{origin}_plus.corr.bedgraph"),
-          origin = SAMPLE_ORIGIN[1]),
-        two_minus = expand(os.path.join(config['out_dir'], "randomised_coverage", 
-          "{{cell_type}}_{origin}_minus.corr.bedgraph"),
+        two = expand(os.path.join(config['out_dir'], "randomised_coverage", 
+          "{{cell_type}}_{origin}_{{strand}}.corr.bedgraph"),
           origin = SAMPLE_ORIGIN[1])
     params:
-        script = os.path.join(config['script_dir'], "label_randomisation.py")
-    threads: 8
+        script = os.path.join(config['script_dir'], "label_randomisation.py"),
+        strand = "{strand}"
+    threads: 4
     resources:
-        mem_mb = lambda wildcards, input: int(sum([os.path.getsize(x) / pow(1024,2) for x in input]) * 20 + 1000)
-    log: os.path.join(config['local_log'], "label_randomisation", "labels_{cell_type}.log")
+        mem_mb = lambda wildcards, input: int(sum([os.path.getsize(x) / pow(1024,2) for x in input]) * 30 + 1000)
+    log: os.path.join(config['local_log'], "label_randomisation", "labels_{cell_type}_{strand}.log")
     conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
     shell:
         """
         python {params.script} -bed {input.bed} \
-          -s1p {input.one_plus} -s1m {input.one_minus} \
-          -s2p {input.two_plus} -s2m {input.two_minus} \
-          -o1p {output.one_plus} -o1m {output.one_minus} \
-          -o2p {output.two_plus} -o2m {output.two_minus} \
+          -s1 {input.one} \
+          -s2 {input.two} \
+          -o1 {output.one} \
+          -o2 {output.two} \
+          -s {params.strand} \
           --cores {threads} --log-file {log}
         """
 

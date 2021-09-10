@@ -34,50 +34,39 @@ rule label_randomisation:
     '''
     input:
         bed = os.path.join(config['mapping_dir'], "terminal_exons.bed"),
-        one_plus = lambda wildcards: os.path.join(config['out_dir'], 
+        one = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_plus.corr.bedgraph"),
-        one_minus = lambda wildcards: os.path.join(config['out_dir'], 
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
+        two = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_minus.corr.bedgraph"),
-        two_plus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_plus.corr.bedgraph"),
-        two_minus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_minus.corr.bedgraph")
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_" + wildcards.strand + ".corr.bedgraph")
     output:
         expand(os.path.join(config['out_dir'], "{{comparison}}", 
-            "randomised_coverage", "{cell_type}_{origin}_{strand}.corr.bedgraph"),
+            "randomised_coverage", "{cell_type}_{origin}_{{strand}}.corr.bedgraph"),
             cell_type = CELL_TYPES,
-            origin = SAMPLE_ORIGIN,
-            strand = ['plus', 'minus'])
+            origin = SAMPLE_ORIGIN)
     params:
-        one_plus = lambda wildcards: os.path.join(config['out_dir'], 
+        one = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_plus.corr.bedgraph"),
-        one_minus = lambda wildcards: os.path.join(config['out_dir'], 
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
+        two = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_minus.corr.bedgraph"),
-        two_plus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_plus.corr.bedgraph"),
-        two_minus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_minus.corr.bedgraph"),
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
+        strand = "{strand}",
         script = os.path.join(config['script_dir'], "label_randomisation.py")
     threads: 8
     resources:
         mem_mb = lambda wildcards, input: int(sum([os.path.getsize(x) / pow(1024,2) for x in input]) * 20 + 1000)
-    log: os.path.join(config['local_log'], "label_randomisation", "log_{comparison}.log")
+    log: os.path.join(config['local_log'], "label_randomisation", "log_{comparison}_{strand}.log")
     conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
     shell:
         """
         python {params.script} -bed {input.bed} \
-          -s1p {input.one_plus} -s1m {input.one_minus} \
-          -s2p {input.two_plus} -s2m {input.two_minus} \
-          -o1p {params.one_plus} -o1m {params.one_minus} \
-          -o2p {params.two_plus} -o2m {params.two_minus} \
+          -s1 {input.one} \
+          -s2 {input.two} \
+          -o1 {params.one} \
+          -o2 {params.two} \
+          -s {params.strand} \
           --cores {threads} --log-file {log} && \
         touch -a {output}
         """
@@ -90,49 +79,38 @@ rule label_randomisation_ct:
     '''
     input:
         bed = os.path.join(config['mapping_dir'], "terminal_exons.bed"),
-        one_plus = lambda wildcards: os.path.join(config['out_dir'], 
+        one = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_plus.corr.bedgraph"),
-        one_minus = lambda wildcards: os.path.join(config['out_dir'], 
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
+        two = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_minus.corr.bedgraph"),
-        two_plus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_plus.corr.bedgraph"),
-        two_minus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "coverage_3p", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_minus.corr.bedgraph")
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_" + wildcards.strand + ".corr.bedgraph")
     output:
         expand(os.path.join(config['out_dir'], "{{comparison}}", 
-            "randomised_coverage", "{cell_type}_{strand}.corr.bedgraph"),
-            cell_type = CELL_TYPES,
-            strand = ['plus', 'minus'])
+            "randomised_coverage", "{cell_type}_{{strand}}.corr.bedgraph"),
+            cell_type = CELL_TYPES)
     params:
-        one_plus = lambda wildcards: os.path.join(config['out_dir'], 
+        one = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_plus.corr.bedgraph"),
-        one_minus = lambda wildcards: os.path.join(config['out_dir'], 
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
+        two = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct1'].values[0] + "_minus.corr.bedgraph"),
-        two_plus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_plus.corr.bedgraph"),
-        two_minus = lambda wildcards: os.path.join(config['out_dir'], 
-            wildcards.comparison, "randomised_coverage", 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_minus.corr.bedgraph"),
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
+        strand = "{strand}",
         script = os.path.join(config['script_dir'], "label_randomisation.py")
     threads: 8
     resources:
         mem_mb = lambda wildcards, input: int(sum([os.path.getsize(x) / pow(1024,2) for x in input]) * 20 + 1000)
-    log: os.path.join(config['local_log'], "label_randomisation", "log_{comparison}.log")
+    log: os.path.join(config['local_log'], "label_randomisation", "log_{comparison}_{strand}.log")
     conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
     shell:
         """
         python {params.script} -bed {input.bed} \
-          -s1p {input.one_plus} -s1m {input.one_minus} \
-          -s2p {input.two_plus} -s2m {input.two_minus} \
-          -o1p {params.one_plus} -o1m {params.one_minus} \
-          -o2p {params.two_plus} -o2m {params.two_minus} \
+          -s1 {input.one} \
+          -s2 {input.two} \
+          -o1 {params.one} \
+          -o2 {params.two} \
+          -s {params.strand} \
           --cores {threads} --log-file {log} && \
         touch -a {output}
         """

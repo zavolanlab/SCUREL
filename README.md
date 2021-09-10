@@ -15,7 +15,7 @@ Starting from scRNA-seq data generated with the 10X Genomics platform and cell t
 
 Two execution modes are possible:
 - `cell_type_comparison`: compare cell types specified in a separate table. Cell types with or without `sample_origin` can be compared.
-- `cell_state_comparison`: compare same cell type from different *sample_origin*, both of which have to be specified for each sample in the samples table `config/samples.tsv`. This mode will also create a quasi-bulk sample by gathering all reads from sample origin, irrespective of cell type. This additional analysis is called *merged* in the results.
+- `cell_state_comparison`: compare same cell type from different *sample_origin*, latter of which has to be specified for each sample in the samples table `config/samples.tsv`. Only pairwise comparisons are possible and only the first two entries are considered. If more than two sample origins available, perform them separately. The entries are order-sensitive, i.e. the analysis will always compare the first versus the second entry. This mode will also create a quasi-bulk sample by gathering all reads from sample origin, irrespective of cell type. This additional analysis is called *merged* in the results.
 
 The framework is written as a [Snakemake](https://snakemake.readthedocs.io/en/stable/) pipeline and therefore individual start- and end-points are possible. The pipeline uses [conda](https://docs.conda.io/en/latest/) for creating virtual environments for individual rules. 
 
@@ -44,7 +44,7 @@ Results are saved in different subdirectories for execution modes:
 |`cell_type_comparison` | `auc_comparisons`|
 | `cell_state_comparison` | `auc` |
 
-Each subdirectory contains a directory `analysis_out` with plots and list of TEs with significant changes in 3'UTR length.
+Each subdirectory contains a directory `analysis_out` with plots and list of TEs with significant changes in 3'UTR length. The change in 3'UTR length is always reported in respect to the first sample (either cell type or first entry in *sample_origin*). For example, one compares T cells in tumor versus control tissue. Then, the AUC analyses that report 3'UTR lengthening mean that this lengthening in observed in tumor tissue in comparison to control tissue. Also, AUC values < 0.5 indicate lengthening in the first sample (tumor tissue). The same applies when performing cell type comparison, the first cell type is compared against the second one.
 
 # Installation
 
@@ -191,7 +191,7 @@ all log files from the snakemake runs will be removed.
 
 The following scripts are used for the pathway analysis.
 
-* `scripts/analysis/patient_comparison.Rmd`: Interactive script to compare datasets or patients for the number of TEs with shortening and lengthening. Converts TE ids to gene names.
+* `scripts/analysis/dataset_and_patient_comparison.Rmd`: Interactive script to compare datasets or patients for the number of TEs with shortening and lengthening. Converts TE ids to gene names.
 * `scripts/convert_transcripts.R`: Command line script to convert Refseq identifiers to gene names.
 * `scripts/analysis/comparison_with_scapa.R`: Interactive script to compare results of SCUREL to scAPA. 
 * `scripts/plotting/plot_enrichment.R`: Command line script to plot pathway enrichment.
