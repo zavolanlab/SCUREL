@@ -8,7 +8,7 @@ For each dataset, resp. patient, and cell type, we have genes that show 3'UTR sh
 ```{r setup, include=FALSE, cache = FALSE}
 require("knitr")
 ## setting working directory
-opts_knit$set(root.dir = "~/Documents/gitlab/sc-polyasite")
+opts_knit$set(root.dir = "~/github_repos/SCUREL")
 ```
 
 ```{r}
