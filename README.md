@@ -220,7 +220,7 @@ all log files from the snakemake runs will be removed.
 
 ## Analysis
 
-The following scripts are used for the pathway analysis.
+The following scripts are used for the pathway analysis. Some scripts need adjustments for individual workflows and some might be useful as a starting point for own analyses.
 
 * `scripts/analysis/dataset_and_patient_comparison.Rmd`: Interactive script to compare datasets or patients for the number of TEs with shortening and lengthening. Converts TE ids to gene names.
 * `scripts/convert_transcripts.R`: Command line script to convert Refseq identifiers to gene names.
