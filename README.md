@@ -40,7 +40,7 @@ SCUREL is a method to detect 3'UTR changes from scRNA-seq data.
 ## General information
 
 SCUREL (Single Cell 3'Untranslated REgion Length analysis) performs differential 3'UTR length analysis on the level of group of cells.
-Check the preprint for more information: https://doi.org/10.1101/2021.06.30.450496.
+Take a look at the publication for more information regarding the method and its application: http://dx.doi.org/10.1261/rna.078886.121.
 
 Starting from scRNA-seq data generated with the 10X Genomics platform and cell type annotations, the framework detects 3'UTR length change events by computing the Area under the curve (AUC) for a given terminal exon region (TE) between two samples and reports TEs with significant changes, separate for 3'UTR shortening and lengthening.
 
