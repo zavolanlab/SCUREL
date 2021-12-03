@@ -12,7 +12,7 @@ Date: 2021-06-29
 [![GitHub issues](https://img.shields.io/github/issues/zavolanlab/scurel)](https://github.com/zavolanlab/scurel/issues)
 [![GitHub license](https://img.shields.io/github/license/zavolanlab/scurel)](https://github.com/zavolanlab/SCUREL/blob/main/LICENSE)
 
-SCUREL is a method to detect 3'UTR changes from scRNA-seq data.
+SCUREL is a method to detect 3'UTR changes from scRNA-seq data. It is built as a Snakemake workflow and uses virtual environments for execution.
 
 # Table of Contents
 
@@ -48,7 +48,7 @@ Two execution modes are possible:
 - `cell_type_comparison`: compare cell types specified in a separate table. Cell types with or without `sample_origin` can be compared.
 - `cell_state_comparison`: compare same cell type from different *sample_origin*, latter of which has to be specified for each sample in the samples table `config/samples.tsv`. Only pairwise comparisons are possible and only the first two entries are considered. If more than two sample origins available, perform them separately. The entries are order-sensitive, i.e. the analysis will always compare the first versus the second entry. This mode will also create a quasi-bulk sample by gathering all reads from sample origin, irrespective of cell type. This additional analysis is called *merged* in the results.
 
-The framework is written as a [Snakemake](https://snakemake.readthedocs.io/en/stable/) pipeline and therefore individual start- and end-points are possible. The pipeline uses [conda](https://docs.conda.io/en/latest/) for creating virtual environments for individual rules. 
+The framework is written as a [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow and therefore individual start- and end-points are possible. The workflow uses [conda](https://docs.conda.io/en/latest/) for creating virtual environments for individual rules. 
 
 This repository also contains a script for cell type annotation based on marker genes using [Seurat](https://satijalab.org/seurat/).
 
