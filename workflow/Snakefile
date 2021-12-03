@@ -30,14 +30,14 @@ wildcard_constraints:
 
 # Select snakefiles based on execution mode
 if config['mode'] == 'cell_state_comparison':
-    include: os.path.join('workflow', 'cell_state_comparison.smk')
+    include: os.path.join('rules', 'cell_state_comparison.smk')
     final_files = [os.path.join(config['out_dir'], 
         "auc", "analysis_out", 
         config['analysis_prefix'] + "_TEs_shorter_" + x + ".tsv") 
         for x in ['merged'] + CELL_TYPES]
 elif config['mode'] == 'cell_type_comparison':
     cmprs = pd.read_table(config["comparisons"], sep="\t", header = None, names = ['comparison', 'ct1', 'ct2']).set_index("comparison", drop = False)
-    include: os.path.join('workflow', 'cell_type_comparison.smk')
+    include: os.path.join('rules', 'cell_type_comparison.smk')
     final_files = [os.path.join(config['out_dir'], 
         "auc_comparisons", "analysis_out", 
         config['analysis_prefix'] + "_TEs_shorter_" + x + ".tsv") 
@@ -66,7 +66,7 @@ rule finish:
 
 
 # include workflow parts
-include: os.path.join('workflow', 'mapping.smk')
+include: os.path.join('rules', 'mapping.smk')
 
 
 rule TE_bed:

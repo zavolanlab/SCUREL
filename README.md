@@ -106,10 +106,10 @@ conda list
 
 ### Step 3: Install Snakemake
 
-The easiest way to install snakemake and all dependencies for this pipeline, is to create and activate the conda environment named *scurel* from the supplied `envs/scurel.yaml` file via
+The easiest way to install snakemake and all dependencies for this pipeline, is to create and activate the conda environment named *scurel* from the supplied `install/scurel.yaml` file via
 
 ```bash
-conda env create --name scurel --file envs/scurel.yaml
+conda env create --name scurel --file install/scurel.yaml
 conda activate scurel
 ```
 
