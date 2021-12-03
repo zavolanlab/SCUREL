@@ -23,7 +23,7 @@ jobs:
           python-version: 3.6.7
           miniconda-version: 4.7.12
           auto-update-conda: false
-          environment-file: envs/scurel.yaml
+          environment-file: install/scurel.yaml
           activate-environment: scurel
           auto-activate-base: false
 
