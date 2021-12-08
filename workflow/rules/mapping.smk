@@ -12,17 +12,19 @@ rule cellranger_count:
     input:
 
     output:
-        os.path.join("cellranger_count", "{sample}", "outs", "possorted_genome_bam.bam")
+        os.path.join(config['cellranger_dir'], 
+            "{sample}", "outs", "possorted_genome_bam.bam")
     params:
         fastqs=lambda wildcards: os.path.abspath(samples.at[wildcards.sample, "fastqs"]),
         transcriptome=os.path.abspath(config["transcriptome"]),
-        id=lambda wildcards: samples.at[wildcards.sample, "name"]
+        id=lambda wildcards: samples.at[wildcards.sample, "name"],
+        out_path = config['cellranger_dir']
     threads: 8
     resources:
         mem_mb=65536,
         mem_gb=30
     shell: """
-            cd cellranger_count; \
+            cd {params.out_path}; \
             rm -r {wildcards.sample}/; \
             cellranger count \
                 --id={wildcards.sample} \
@@ -38,7 +40,8 @@ rule cellranger_count:
 rule filter_high_quality:
     ''' filter aligned reads by mapq quality scores '''
     input:
-        "cellranger_count/{sample}/outs/possorted_genome_bam.bam"
+        os.path.join(config['cellranger_dir'], 
+            "{sample}", "outs", "possorted_genome_bam.bam")
     output:
         temp(os.path.join(config['mapping_dir'], "{sample}", "filtered", "mapq.bam"))
     resources:
