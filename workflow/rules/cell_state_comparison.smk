@@ -110,7 +110,7 @@ rule calculation_auc:
     conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
     shell:
         """
-        python {input.script} -bed {input.bed} \
+        python {params.script} -bed {input.bed} \
           --cpm-threshold {params.cpm_threshold} \
           --one-plus {input.one_plus} --one-minus {input.one_minus} \
           --two-plus {input.two_plus} --two-minus {input.two_minus} \
@@ -148,7 +148,7 @@ rule auc_analysis:
         mem_mb=2048
     shell:
         """
-        Rscript {input.script} \
+        Rscript {params.script} \
           --analysis-dir {params.in_dir} \
           --out-dir {params.out_dir} \
           --comparison {params.cmprs} \
