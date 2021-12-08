@@ -104,12 +104,23 @@ Test installation with
 conda list
 ```
 
+#### Install mamba
+
+[Mamba](https://mamba.readthedocs.io/en/latest/installation.html) is a faster way of installing conda packages.
+Install with
+
+```bash
+conda install mamba -n base -c conda-forge
+```
+
+Installation of mamba is not necessary. If not installed, replace `mamba` commands by `conda`.
+
 ### Step 3: Install Snakemake
 
 The easiest way to install snakemake and all dependencies for this pipeline, is to create and activate the conda environment named *scurel* from the supplied `install/scurel.yaml` file via
 
 ```bash
-conda env create --name scurel --file install/scurel.yaml
+mamba env create --name scurel --file install/scurel.yaml
 conda activate scurel
 ```
 
