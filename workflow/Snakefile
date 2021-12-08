@@ -280,7 +280,7 @@ rule correct_coverage_3p_end:
         os.path.join(config['out_dir'], "coverage_3p", 
             "{cell_type}_{origin}_{strand}.corr.bedgraph")
     params:
-        script = os.path.join(config['script_dir'], "correct_coverage_3p_end.py")
+        script = os.path.join(workflow.basedir, config['script_dir'], "correct_coverage_3p_end.py")
     threads: 
         lambda wildcards, input: 1 if (os.path.getsize(input[0]) / pow(1024,2)) < 100 else 3
     resources:
@@ -305,7 +305,7 @@ rule correct_coverage_3p_end_ct:
         os.path.join(config['out_dir'], "coverage_3p", 
             "{cell_type}_{strand}.corr.bedgraph")
     params:
-        script = os.path.join(config['script_dir'], "correct_coverage_3p_end.py")
+        script = os.path.join(workflow.basedir, config['script_dir'], "correct_coverage_3p_end.py")
     threads: 
         lambda wildcards, input: 1 if (os.path.getsize(input[0]) / pow(1024,2)) < 100 else 3
     resources:
