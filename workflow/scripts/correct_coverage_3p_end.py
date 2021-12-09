@@ -56,23 +56,27 @@ def main():
     logging.info("Loaded: " + args.file)
     # get regions with coverage > 0 and longer than 1 bp
     df = sample.loc[(sample.coverage != 0) & (sample.end - sample.start > 1)]
-    # create new rows
-    try:
-        pool = multiprocessing.Pool(args.NUM_CORES)
-        logging.info("Started multiprocessing pool with %s cores." % (args.NUM_CORES))
-        new_rows = pd.concat(pool.imap(extend_rows, df.iterrows(), chunksize = 250), ignore_index = True)
-    except Exception as e:
-        sys.exit(logging.error("Something went wrong during multiprocessing: " + str(e)))
-        pool.terminate()
-        sys.exit(1)
-    finally:
-        pool.close()
-        pool.join()
-        logging.info("multiprocessing.Pool closed.")
-    # replace old rows
-    sample.drop(df.index, inplace = True)
-    # append new rows
-    sample = sample.append(new_rows, ignore_index = True)
+    # create new rows by splitting the coverage for regions spanning > 1 bp
+    # if no such region exists, i.e. df.shape[0] == 0, skip to sort
+    if df.shape[0] != 0:
+      try:
+          pool = multiprocessing.Pool(args.NUM_CORES)
+          logging.info("Started multiprocessing pool with %s cores." % (args.NUM_CORES))
+          new_rows = pd.concat(pool.imap(extend_rows, df.iterrows(), chunksize = 250), ignore_index = True)
+      except Exception as e:
+          sys.exit(logging.error("Something went wrong during multiprocessing: " + str(e)))
+          pool.terminate()
+          sys.exit(1)
+      finally:
+          pool.close()
+          pool.join()
+          logging.info("multiprocessing.Pool closed.")
+      # replace old rows
+      sample.drop(df.index, inplace = True)
+      # append new rows
+      sample = sample.append(new_rows, ignore_index = True)
+    else:
+      logging.info("No correction necessary as no multi-position coverage rows found")
     # sort
     sample.sort_values(by = ['chrom', 'start'], inplace = True)
     # write out
