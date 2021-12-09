@@ -267,4 +267,5 @@ po/*~
 # Directories
 scurel_out/
 cellranger_count/
+!.test/integration/cellranger_count/
 logs/

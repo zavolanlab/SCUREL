@@ -1,0 +1,90 @@
+##############
+# output directories
+
+# output directory of cellranger. 
+# If samples alredy mapped, place them with this structure within the directory:
+#  "{sample}/outs/possorted_genome_bam.bam"
+# If mapping is not yet done, cellranger count will be executed within this directory.
+cellranger_dir: ".test/integration/cellranger_count"
+
+# define a directory for mapping results 
+# creates a subdirectory for each sample
+mapping_dir: ".test/integration/mapping"
+# Genome annotation for TE construction; BED will be save in above directory
+genome_annotation: ".test/integration/genome.GRCm38.p6.adj.sorted.chr18.gff"
+# params for TE creation
+TE_bed:
+  type_id: "gene_biotype"
+  gene_type: "protein_coding lncRNA"
+  source: "mRNA lnc_RNA"
+
+# dataset specific entries
+defsamples: ".test/integration/samples.tsv"
+# Cell types in cell_type_annotation file, used for AUC calculation
+# TODO: ask if "merged" should be executed as well
+cell_types: ['activated_tcell', 'naive_tcell']
+sample_origin: ['naive', 'infected']
+cell_type_annotation: ".test/integration/cell_type_annotations.csv"
+
+##############
+# define an output directory (depends on defsamples, cell_type_annotation, tandem_pas)
+out_dir: ".test/integration/out"
+
+# define execution mode, either cellranger_count, cell_type_comparison, cell_state_comparison or pas_usage
+# each result is saved in an own directory within out_dir, with the exception ofr cellranger_count, which is saved in its own directory.
+# Analysis results will be in directory auc for mode cell_state_comparison and auc_comparisons for cell_type_comparison
+mode: "cell_state_comparison" # TODO: replace mode by checking if comparisons file used
+
+##############
+# additional fields for cell_type_comparison (leave empty file path if mode not selected)
+# tab separated file containing three entries for each comparison: an unique identifier, ct1_origin and ct2_origin. Comparison will be performed for ct1 versus ct2. Origin must be same as in sample_origin
+# will create a subdirectory for every comparison (first column)
+comparisons: ""
+
+# Parameters (for both modes above)
+# define an analysis prefix
+analysis_prefix: "cpm2"
+calculation_auc:
+  cpm_threshold: 0
+  quantiles: "0.25 0.75"
+auc_analysis:
+  alpha: 0.01 # Two sided probability tail for significance (corresponds to FDR)
+  cpm_threshold: 2 # Expression threshold in counts per million
+  length_threshold: 0 # Minimum TE length given as quantile [0-1]
+  iqr_threshold: 200 # Minimum IQR range (in basepairs) for detection of multiPAS 3'UTRs
+
+##############
+# additional fields for pas_usage (leave empty file path if mode not selected)
+# sum for barcode over all pas >= 100 (i.e. remove cell barcodes if below threshold)
+count_threshold: 100 
+# sum for pas over all barcodes >= 0, i.e. use all pas clusters
+pas_threshold: 0
+
+##############
+# project dirs
+envs_dir: "envs"
+script_dir: "scripts"
+# log directories
+local_log: "logs/local_log"
+cluster_log: "logs/cluster_log"
+
+##############
+# genome annotations for cellranger
+transcriptome: "datasets/ref_transcriptome/refdata-gex-mm10-2020-A/"
+
+##############
+# General parameters 
+filter_high_quality:
+  mapq: 30
+filter_non_CB_tags:
+  tmp_dir: $TMPDIR
+split_bam:
+  tmp_dir: $TMPDIR
+
+# median TE length parameters (not used)
+differential_APA:
+  read_threshold: "50%"
+  variance_threshold: "1e4"
+  ALPHA_level: "0.05"
+differential_APA_combine:
+  ALPHA_level: "0.05"
