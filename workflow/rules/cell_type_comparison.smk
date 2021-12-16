@@ -53,7 +53,7 @@ rule label_randomisation:
             wildcards.comparison, "randomised_coverage", 
             cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
         strand = "{strand}",
-        script = os.path.join(config['script_dir'], "label_randomisation.py")
+        script = os.path.join(workflow.basedir, config['script_dir'], "label_randomisation.py")
     threads: 8
     resources:
         mem_mb = lambda wildcards, input: int(sum([os.path.getsize(x) / pow(1024,2) for x in input]) * 20 + 1000)
@@ -97,7 +97,7 @@ rule label_randomisation_ct:
             wildcards.comparison, "randomised_coverage", 
             cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_" + wildcards.strand + ".corr.bedgraph"),
         strand = "{strand}",
-        script = os.path.join(config['script_dir'], "label_randomisation.py")
+        script = os.path.join(workflow.basedir, config['script_dir'], "label_randomisation.py")
     threads: 8
     resources:
         mem_mb = lambda wildcards, input: int(sum([os.path.getsize(x) / pow(1024,2) for x in input]) * 20 + 1000)
@@ -132,7 +132,7 @@ rule cumulative_coverage_3p_end:
             "{comparison}", "{cov_dir}", "{cell_type}_{origin}_cumsum_{strand}.bedgraph")
     params:
         strand = "{strand}",
-        script = os.path.join(config['script_dir'], "cumulative_coverage.py")
+        script = os.path.join(workflow.basedir, config['script_dir'], "cumulative_coverage.py")
     threads: 
         lambda wildcards, input: 1 if (os.path.getsize(input.coverage) / 
             pow(1024,2)) < 50 else 3
@@ -167,7 +167,7 @@ rule cumulative_coverage_3p_end_ct:
             "{comparison}", "{cov_dir}", "{cell_type}_cumsum_{strand}.bedgraph")
     params:
         strand = "{strand}",
-        script = os.path.join(config['script_dir'], "cumulative_coverage.py")
+        script = os.path.join(workflow.basedir, config['script_dir'], "cumulative_coverage.py")
     threads: 
         lambda wildcards, input: 1 if (os.path.getsize(input.coverage) / 
             pow(1024,2)) < 50 else 3
@@ -205,12 +205,12 @@ rule calculation_auc:
             cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_cumsum_plus.bedgraph"),
         two_minus = lambda wildcards: os.path.join(config['out_dir'], 
             wildcards.comparison, wildcards.cov_dir, 
-            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_cumsum_minus.bedgraph"),
-        script = os.path.join(config['script_dir'], "calculation_auc.py")
+            cmprs.loc[cmprs['comparison'] == wildcards.comparison, 'ct2'].values[0] + "_cumsum_minus.bedgraph")
     output:
         auc_bed = os.path.join(config['out_dir'], 
           "auc_comparisons", "{cov_dir}", "auc_{comparison}.tsv")
     params:
+        script = os.path.join(workflow.basedir, config['script_dir'], "calculation_auc.py"),
         cpm_threshold = config['calculation_auc']['cpm_threshold'],
         quants = config['calculation_auc']['quantiles'],
         out_dir = os.path.join(config['out_dir'], "auc_comparisons")
@@ -220,7 +220,7 @@ rule calculation_auc:
     conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
     shell:
         """
-        python {input.script} -bed {input.bed} \
+        python {params.script} -bed {input.bed} \
           --cpm-threshold {params.cpm_threshold} \
           --one-plus {input.one_plus} --one-minus {input.one_minus} \
           --two-plus {input.two_plus} --two-minus {input.two_minus} \
@@ -236,14 +236,14 @@ rule auc_analysis:
     input:
         auc_bed = expand(os.path.join(config['out_dir'], 
           "auc_comparisons", "{cov_dir}", "auc_{{comparison}}.tsv"),
-          cov_dir = ['coverage_3p', 'randomised_coverage']),
-        script = os.path.join(config['script_dir'], "auc_analysis.R")
+          cov_dir = ['coverage_3p', 'randomised_coverage'])
     output:
         shorter = os.path.join(config['out_dir'],
           "auc_comparisons", "analysis_out", "{prefix}_TEs_shorter_{comparison}.tsv"),
         longer = os.path.join(config['out_dir'],
           "auc_comparisons", "analysis_out", "{prefix}_TEs_longer_{comparison}.tsv")
     params:
+        script = os.path.join(workflow.basedir, config['script_dir'], "auc_analysis.R"),
         in_dir = os.path.join(config['out_dir'], "auc_comparisons"),
         out_dir = lambda wildcards, output: os.path.dirname(output.shorter),
         cmprs = "{comparison}",
@@ -258,7 +258,7 @@ rule auc_analysis:
         mem_mb=2048
     shell:
         """
-        Rscript {input.script} \
+        Rscript {params.script} \
           --analysis-dir {params.in_dir} \
           --out-dir {params.out_dir} \
           --comparison {params.cmprs} \

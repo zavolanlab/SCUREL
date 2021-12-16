@@ -104,12 +104,23 @@ Test installation with
 conda list
 ```
 
+#### Install mamba
+
+[Mamba](https://mamba.readthedocs.io/en/latest/installation.html) is a faster way of installing conda packages.
+Install with
+
+```bash
+conda install mamba -n base -c conda-forge
+```
+
+Installation of mamba is not necessary. If not installed, replace `mamba` commands by `conda`.
+
 ### Step 3: Install Snakemake
 
 The easiest way to install snakemake and all dependencies for this pipeline, is to create and activate the conda environment named *scurel* from the supplied `install/scurel.yaml` file via
 
 ```bash
-conda env create --name scurel --file install/scurel.yaml
+mamba env create --name scurel --file install/scurel.yaml
 conda activate scurel
 ```
 
@@ -129,7 +140,7 @@ conda activate scurel
 
 ### Map reads
 
-If one starts from FASTQ, the reads need to be mapped. We provide a wrapper for *cellranger* in `workflow/mapping.smk`. The rules map FASTQ files in the given directories set in `config/samples.tsv` and filters reads. 
+If one starts from FASTQ, the reads need to be mapped. We provide a wrapper for *cellranger* in `workflow/rules/mapping.smk`. The rules map FASTQ files in the given directories set in `config/samples.tsv` and filters reads. 
 
 In the `Snakefile` put the following as finish rule:
 
@@ -186,7 +197,7 @@ bash build_rulegraph.sh CONFIGFILE
 When executing the pipeline locally (i.e. on personal machine), *cellranger v3* has to be installed to map 10x raw fastq files to the genome: [link](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/installation).
 Please note that *cellranger* requires a minimum of 64GB RAM (see [system requirements](https://support.10xgenomics.com/single-cell-gene-expression/software/overview/system-requirements)).
 
-Execute *cellranger* as standalone pipeline and generate BAM files of mapped reads. To ensure the subsequent execution of this pipeline, create a directory `cellranger_count` inside the pipeline directory. Otherwise, adjust the relative paths for rule *filter_high_quality* in `workflow/mapping.smk`.
+Execute *cellranger* as standalone pipeline and generate BAM files of mapped reads. To ensure the subsequent execution of this pipeline, create a directory `cellranger_count` inside the pipeline directory. Otherwise, adjust the relative paths for rule *filter_high_quality* in `workflow/rules/mapping.smk`.
 
 Run in the directory of this pipeline and specify CONFIGFILE
 
@@ -200,7 +211,7 @@ The pipeline is currently tailored to execution on a slurm cluster with CentOS 7
 If necessary, adjust queue and time constraints in `config/cluster.json`. 
 Additionally, memory and thread usage can be changed in the individual snakemake rules.
 
-> Note that *cellranger* is loaded manually on the slurm cluster. This has to be specified within the file `workflow/mapping.smk` inside the rule *cellranger_count* as a first statement in the shell command (e.g. `ml CellRanger/5.0.0;`).
+> Note that *cellranger* is loaded manually on the slurm cluster. This has to be specified within the file `workflow/rules/mapping.smk` inside the rule *cellranger_count* as a first statement in the shell command (e.g. `ml CellRanger/5.0.0;`).
 
 Run in the directory of this pipeline and specify CONFIGFILE
 
@@ -222,14 +233,14 @@ all log files from the snakemake runs will be removed.
 
 The following scripts are used for the pathway analysis.
 
-* `scripts/analysis/dataset_and_patient_comparison.Rmd`: Interactive script to compare datasets or patients for the number of TEs with shortening and lengthening. Converts TE ids to gene names.
-* `scripts/convert_transcripts.R`: Command line script to convert Refseq identifiers to gene names.
-* `scripts/analysis/comparison_with_scapa.R`: Interactive script to compare results of SCUREL to scAPA. 
-* `scripts/plotting/plot_enrichment.R`: Command line script to plot pathway enrichment.
-* `scripts/plotting/get_bg_genome.R`: Command line script to get background genome from expressed transcripts.
-* `scripts/plot_auc.py`: Command line script to plot graph to compute AUC.
-* `scripts/plotting/heatmap_enrichment.R`: Command line script to plot pathway enrichment for multiple pathways as heatmap.
-* `scripts/analysis/table_all_APA.R`: Interactive script to gather all significant APA shortening events and create binary table. 
+* `workflow/scripts/analysis/dataset_and_patient_comparison.Rmd`: Interactive script to compare datasets or patients for the number of TEs with shortening and lengthening. Converts TE ids to gene names.
+* `workflow/scripts/convert_transcripts.R`: Command line script to convert Refseq identifiers to gene names.
+* `workflow/scripts/analysis/comparison_with_scapa.R`: Interactive script to compare results of SCUREL to scAPA. 
+* `workflow/scripts/plotting/plot_enrichment.R`: Command line script to plot pathway enrichment.
+* `workflow/scripts/plotting/get_bg_genome.R`: Command line script to get background genome from expressed transcripts.
+* `workflow/scripts/plot_auc.py`: Command line script to plot graph to compute AUC.
+* `workflow/scripts/plotting/heatmap_enrichment.R`: Command line script to plot pathway enrichment for multiple pathways as heatmap.
+* `workflow/scripts/analysis/table_all_APA.R`: Interactive script to gather all significant APA shortening events and create binary table. 
 
 ## Contributing
 

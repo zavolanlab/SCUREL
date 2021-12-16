@@ -1,6 +1,12 @@
 ##############
 # output directories
 
+# output directory of cellranger. 
+# If samples alredy mapped, place them with this structure within the directory:
+#  "{sample}/outs/possorted_genome_bam.bam"
+# If mapping is not yet done, cellranger count will be executed within this directory.
+cellranger_dir: "cellranger_count"
+
 # define a directory for mapping results 
 # creates a subdirectory for each sample
 mapping_dir: "scurel_out/mapping"
@@ -47,7 +53,7 @@ auc_analysis:
   iqr_threshold: 200 # Minimum IQR range (in basepairs) for detection of multiPAS 3'UTRs
 
 ##############
-# project dirs
+# project dirs within workflow/
 envs_dir: "envs"
 script_dir: "scripts"
 # log directories

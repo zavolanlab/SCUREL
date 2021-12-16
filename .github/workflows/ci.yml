@@ -49,6 +49,14 @@ jobs:
         shell: bash -l {0}
         run: bash exe_dry.sh .test/integration-dry/cell_state_comparison_config.yaml
 
+      - name: snakemake --dryrun test data
+        shell: bash -l {0}
+        run: bash exe_dry.sh .test/integration/cell_state_comparison.yaml
+
+      - name: snakemake run test data
+        shell: bash -l {0}
+        run: bash exe_snakemake_local.sh .test/integration/cell_state_comparison.yaml
+
   cell_type_comparison:
     runs-on: ubuntu-20.04
     steps:
@@ -87,3 +95,11 @@ jobs:
       - name: snakemake --dryrun
         shell: bash -l {0}
         run: bash exe_dry.sh .test/integration-dry/cell_type_comparison_config.yaml
+
+      - name: snakemake --dryrun test data
+        shell: bash -l {0}
+        run: bash exe_dry.sh .test/integration/cell_type_comparison.yaml
+
+      - name: snakemake run test data
+        shell: bash -l {0}
+        run: bash exe_snakemake_local.sh .test/integration/cell_type_comparison.yaml

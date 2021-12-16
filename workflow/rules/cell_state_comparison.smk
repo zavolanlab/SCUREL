@@ -24,7 +24,7 @@ rule label_randomisation:
           "{{cell_type}}_{origin}_{{strand}}.corr.bedgraph"),
           origin = SAMPLE_ORIGIN[1])
     params:
-        script = os.path.join(config['script_dir'], "label_randomisation.py"),
+        script = os.path.join(workflow.basedir, config['script_dir'], "label_randomisation.py"),
         strand = "{strand}"
     threads: 4
     resources:
@@ -57,7 +57,7 @@ rule cumulative_coverage_3p_end:
             "{cov_dir}", "{cell_type}_{origin}_cumsum_{strand}.bedgraph")
     params:
         strand = "{strand}",
-        script = os.path.join(config['script_dir'], "cumulative_coverage.py")
+        script = os.path.join(workflow.basedir, config['script_dir'], "cumulative_coverage.py")
     threads: 
         lambda wildcards, input: 1 if (os.path.getsize(input.coverage) / 
           pow(1024,2)) < 50 else 3
@@ -95,12 +95,12 @@ rule calculation_auc:
           origin = SAMPLE_ORIGIN[1]),
         two_minus = expand(os.path.join(config['out_dir'], "{{cov_dir}}", 
           "{{cell_type}}_{origin}_cumsum_minus.bedgraph"),
-          origin = SAMPLE_ORIGIN[1]),
-        script = os.path.join(config['script_dir'], "calculation_auc.py")
+          origin = SAMPLE_ORIGIN[1])
     output:
         auc_bed = os.path.join(config['out_dir'], 
           "auc", "{cov_dir}", "auc_{cell_type}.tsv")
     params:
+        script = os.path.join(workflow.basedir, config['script_dir'], "calculation_auc.py"),
         cpm_threshold = config['calculation_auc']['cpm_threshold'],
         quants = config['calculation_auc']['quantiles'],
         out_dir = os.path.join(config['out_dir'], "auc")
@@ -110,7 +110,7 @@ rule calculation_auc:
     conda: os.path.join(workflow.basedir, config['envs_dir'], "python_basics.yaml")
     shell:
         """
-        python {input.script} -bed {input.bed} \
+        python {params.script} -bed {input.bed} \
           --cpm-threshold {params.cpm_threshold} \
           --one-plus {input.one_plus} --one-minus {input.one_minus} \
           --two-plus {input.two_plus} --two-minus {input.two_minus} \
@@ -126,14 +126,14 @@ rule auc_analysis:
     input:
         auc_files = expand(os.path.join(config['out_dir'], 
           "auc", "{cov_dir}", "auc_{{cell_type}}.tsv"),
-          cov_dir = ['coverage_3p', 'randomised_coverage']),
-        script = os.path.join(config['script_dir'], "auc_analysis.R")
+          cov_dir = ['coverage_3p', 'randomised_coverage'])
     output:
         shorter = os.path.join(config['out_dir'],
           "auc", "analysis_out", "{prefix}_TEs_shorter_{cell_type}.tsv"),
         longer = os.path.join(config['out_dir'],
           "auc", "analysis_out", "{prefix}_TEs_longer_{cell_type}.tsv")
     params:
+        script = os.path.join(workflow.basedir, config['script_dir'], "auc_analysis.R"),
         in_dir = os.path.join(config['out_dir'], "auc"),
         out_dir = lambda wildcards, output: os.path.dirname(output.shorter),
         cmprs = "{cell_type}",
@@ -148,7 +148,7 @@ rule auc_analysis:
         mem_mb=2048
     shell:
         """
-        Rscript {input.script} \
+        Rscript {params.script} \
           --analysis-dir {params.in_dir} \
           --out-dir {params.out_dir} \
           --comparison {params.cmprs} \
